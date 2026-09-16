@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
-import { inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { entities, feeds, meetings } from "@/lib/schema";
 import { toMeeting } from "@/lib/slices";
+import {
+  freshFeedPredicate,
+  safeMeetingPredicate,
+} from "@/lib/verification";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,33 +15,41 @@ export async function GET(request: Request) {
   const db = getDb();
   try {
     const rows = await db
-      .select()
+      .select({ meeting: meetings, feed: feeds })
       .from(meetings)
-      .where(inArray(meetings.attendance, ["online", "hybrid"]))
+      .innerJoin(
+        feeds,
+        and(eq(feeds.id, meetings.feedId), freshFeedPredicate()),
+      )
+      .where(
+        and(
+          inArray(meetings.attendance, ["online", "hybrid"]),
+          safeMeetingPredicate(),
+        ),
+      )
       .orderBy(sql`${meetings.day} asc nulls last, ${meetings.time} asc nulls last`)
       .limit(limit)
       .offset(offset);
 
     const entityIds = [
-      ...new Set(rows.map((r) => r.entityId).filter((id): id is string => Boolean(id))),
+      ...new Set(
+        rows
+          .map((r) => r.meeting.entityId)
+          .filter((id): id is string => Boolean(id)),
+      ),
     ];
-    const feedIds = [...new Set(rows.map((r) => r.feedId))];
     const entityRows = entityIds.length
       ? await db.select().from(entities).where(inArray(entities.id, entityIds))
       : [];
-    const feedRows = feedIds.length
-      ? await db.select().from(feeds).where(inArray(feeds.id, feedIds))
-      : [];
     const entityMap = new Map(entityRows.map((e) => [e.id, e]));
-    const feedMap = new Map(feedRows.map((f) => [f.id, f]));
 
     return NextResponse.json(
       {
-        meetings: rows.map((row) =>
+        meetings: rows.map(({ meeting, feed }) =>
           toMeeting(
-            row,
-            row.entityId ? entityMap.get(row.entityId) : undefined,
-            feedMap.get(row.feedId)?.name ?? row.feedId,
+            meeting,
+            meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
+            feed,
           ),
         ),
         offset,
@@ -51,6 +63,7 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Online failed";
+    console.error("api.online.failed", { message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

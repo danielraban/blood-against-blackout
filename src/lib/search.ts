@@ -1,7 +1,19 @@
 import type { Meeting, MeetingGroupKey, SearchFilters } from "./types";
 import { haversineKm } from "./geo";
+import { labelForType } from "./spec";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const COMBINING_MARKS = /[\u0300-\u036f]/g;
+const WHITESPACE = /\s+/g;
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(COMBINING_MARKS, "")
+    .toLocaleLowerCase()
+    .replace(WHITESPACE, " ")
+    .trim();
+}
 
 export function weekdayLabel(day: number) {
   return WEEKDAYS[day] ?? "";
@@ -108,19 +120,26 @@ export function filterAndGroup(
     }
 
     if (filters.query.trim()) {
-      const q = filters.query.toLowerCase();
-      const hay = [
+      const terms = normalizeSearchText(filters.query).split(" ");
+      const searchableValues = [
         meeting.name,
         meeting.groupName,
         meeting.locationName,
         meeting.city,
+        meeting.state,
+        meeting.country,
         meeting.address,
+        meeting.formattedAddress,
         meeting.notes,
+        meeting.locationNotes,
+        meeting.attendance,
+        meeting.fellowship,
+        ...meeting.types,
+        ...meeting.types.map(labelForType),
       ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      if (!hay.includes(q)) continue;
+        .filter((value): value is string => Boolean(value));
+      const hay = normalizeSearchText(searchableValues.join(" "));
+      if (!terms.every((term) => hay.includes(term))) continue;
     }
 
     const start = parseMinutes(meeting.time);

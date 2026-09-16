@@ -53,7 +53,7 @@ export function MeetingCard({
         </Badge>
         <Badge>{meeting.attendance}</Badge>
         {meeting.inProgress ? <Badge className="border-black bg-warn text-black">now</Badge> : null}
-        {isStale(meeting.updatedAt) ? <Badge>listing may be old</Badge> : null}
+        {isStale(meeting.sourceVerifiedAt) ? <Badge>listing may be old</Badge> : null}
         {meeting.types.slice(0, 4).map((type) => (
           <Badge key={type}>{labelForType(type)}</Badge>
         ))}

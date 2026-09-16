@@ -11,6 +11,7 @@ import {
 import { ingestAllFeeds, ingestOneFeed, seedFeedCatalog } from "@/lib/ingest";
 import { slugify } from "@/lib/utils";
 import { assertPublicHttpsUrl } from "@/lib/url-security";
+import { runMeetingAudit } from "@/lib/audit";
 
 type AdminBody = {
   action: "login" | "logout" | "seed" | "ingest" | "add" | "status";
@@ -28,13 +29,15 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const db = getDb();
-  const [feedRows, runs] = await Promise.all([
+  const [feedRows, runs, audit] = await Promise.all([
     db.select().from(feeds),
     db.select().from(ingestRuns).orderBy(desc(ingestRuns.id)).limit(10),
+    runMeetingAudit(),
   ]);
   return NextResponse.json({
     feeds: feedRows,
     runs,
+    audit,
   });
 }
 

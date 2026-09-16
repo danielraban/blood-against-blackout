@@ -29,12 +29,13 @@ export async function GET(request: Request) {
       { cities: rows },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+          "Cache-Control": "public, s-maxage=900, stale-while-revalidate=900",
         },
       },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cities failed";
+    console.error("api.cities.failed", { message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

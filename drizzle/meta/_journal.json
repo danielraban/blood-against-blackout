@@ -8,6 +8,13 @@
       "when": 1789568670527,
       "tag": "0000_friendly_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789576030229,
+      "tag": "0001_goofy_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

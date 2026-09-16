@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { Meeting, SlicePayload } from "./types";
+import { SOURCE_FRESHNESS_MS } from "./verification-policy";
 
 const SLICE_TTL_MS = 12 * 60 * 60 * 1000;
 
@@ -51,9 +52,24 @@ function getDb() {
 
 export async function readSlice(geohash: string) {
   const db = await getDb();
-  const slice = await db.get("slices", geohash);
-  if (!slice) return null;
-  if (Date.now() - new Date(slice.fetchedAt).getTime() > SLICE_TTL_MS) {
+  const stored = await db.get("slices", geohash);
+  if (!stored) return null;
+  const now = Date.now();
+  if (now - new Date(stored.fetchedAt).getTime() > SOURCE_FRESHNESS_MS) {
+    await db.delete("slices", geohash);
+    return null;
+  }
+  const meetings = stored.meetings.filter((meeting) =>
+    meetingIsCurrentlyVerified(meeting, now),
+  );
+  if (stored.meetings.length > 0 && meetings.length === 0) {
+    await db.delete("slices", geohash);
+    return null;
+  }
+  const slice = meetings.length === stored.meetings.length
+    ? stored
+    : { ...stored, meetings };
+  if (now - new Date(slice.fetchedAt).getTime() > SLICE_TTL_MS) {
     return { slice, stale: true as const };
   }
   return { slice, stale: false as const };
@@ -66,7 +82,8 @@ export async function writeSlice(slice: SlicePayload) {
 
 export async function listFavorites() {
   const db = await getDb();
-  return db.getAll("favorites");
+  const favorites = await db.getAll("favorites");
+  return favorites.filter((meeting) => meetingIsCurrentlyVerified(meeting));
 }
 
 export function favoriteKey(meeting: Pick<Meeting, "feedId" | "slug">) {
@@ -108,4 +125,13 @@ export async function getMeta<T>(key: string) {
 export async function setMeta(key: string, value: unknown) {
   const db = await getDb();
   await db.put("meta", value, key);
+}
+
+function meetingIsCurrentlyVerified(meeting: Meeting, now = Date.now()) {
+  if (!meeting.sourceVerifiedAt) return false;
+  const verifiedAt = new Date(meeting.sourceVerifiedAt).getTime();
+  return (
+    Number.isFinite(verifiedAt) &&
+    now - verifiedAt <= SOURCE_FRESHNESS_MS
+  );
 }

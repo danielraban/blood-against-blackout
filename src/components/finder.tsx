@@ -78,7 +78,11 @@ export function Finder({
   const [offlineNote, setOfflineNote] = useState<string | null>(null);
   const filterPanelRef = useRef<HTMLElement>(null);
 
-  const loadSlice = useCallback(async (hash: string, nextOrigin?: { lat: number; lng: number } | null) => {
+  const loadSlice = useCallback(async (
+    hash: string,
+    nextOrigin?: { lat: number; lng: number } | null,
+    citySlug?: string | null,
+  ) => {
     setGeohash(hash);
     setStatus("Loading meetings…");
     const cached = await readSlice(hash);
@@ -111,6 +115,8 @@ export function Finder({
     if (nextOrigin) setOrigin(nextOrigin);
     const next = new URLSearchParams(params.toString());
     next.set("gh", hash);
+    if (citySlug === null) next.delete("city");
+    else if (citySlug) next.set("city", citySlug);
     next.delete("lat");
     next.delete("lng");
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
@@ -120,9 +126,7 @@ export function Finder({
     const gh = params.get("gh");
     const city = params.get("city");
     const handle = window.setTimeout(() => {
-      if (gh && gh !== geohash) {
-        void loadSlice(gh);
-      } else if (city) {
+      if (city) {
         void (async () => {
           const response = await fetch(`/api/cities?q=${encodeURIComponent(city)}`);
           const data = (await response.json()) as { cities: City[] };
@@ -130,9 +134,15 @@ export function Finder({
           if (match) {
             setSelectedCity(match);
             setOrigin({ lat: match.lat, lng: match.lng });
-            await loadSlice(match.geohash4, { lat: match.lat, lng: match.lng });
+            await loadSlice(
+              match.geohash4,
+              { lat: match.lat, lng: match.lng },
+              match.slug,
+            );
           }
         })();
+      } else if (gh && gh !== geohash) {
+        void loadSlice(gh);
       }
     }, 0);
     return () => window.clearTimeout(handle);
@@ -246,7 +256,8 @@ export function Finder({
       (pos) => {
         const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setOrigin(next);
-        void loadSlice(encodeGeohash4(next.lat, next.lng), next);
+        setSelectedCity(null);
+        void loadSlice(encodeGeohash4(next.lat, next.lng), next, null);
       },
       () => setStatus("Location was denied. Search a city instead."),
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
@@ -260,11 +271,11 @@ export function Finder({
     setCitySearchState("idle");
     setCityOpen(false);
     setOrigin({ lat: city.lat, lng: city.lng });
-    const next = new URLSearchParams(params.toString());
-    next.set("city", city.slug);
-    next.set("gh", city.geohash4);
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-    await loadSlice(city.geohash4, { lat: city.lat, lng: city.lng });
+    await loadSlice(
+      city.geohash4,
+      { lat: city.lat, lng: city.lng },
+      city.slug,
+    );
   }
 
   const emptyBecauseCoverage =
@@ -301,9 +312,12 @@ export function Finder({
             <div
               className="relative min-w-0 flex-1 space-y-2"
               onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) {
-                  setCityOpen(false);
-                }
+                const container = event.currentTarget;
+                window.requestAnimationFrame(() => {
+                  if (!container.contains(document.activeElement)) {
+                    setCityOpen(false);
+                  }
+                });
               }}
             >
               <label
@@ -365,10 +379,16 @@ export function Finder({
                             role="option"
                             aria-selected="false"
                             className="flex min-h-12 w-full items-center justify-between gap-4 px-4 text-left hover:bg-warn hover:text-black focus-visible:bg-warn focus-visible:text-black"
+                            onPointerDown={(event) => {
+                              // Mobile Safari moves focus before dispatching click,
+                              // which can close and unmount the listbox too early.
+                              event.preventDefault();
+                            }}
                             onClick={() => void pickCity(city)}
                           >
                             <span className="truncate">
                               {city.label}
+                              {city.state ? `, ${city.state}` : ""}
                               {city.country ? `, ${city.country}` : ""}
                             </span>
                             <span className="shrink-0 text-sm opacity-70">

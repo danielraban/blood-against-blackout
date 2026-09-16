@@ -29,6 +29,7 @@ export type Meeting = {
   notes: string | null;
   locationNotes: string | null;
   updatedAt: string | null;
+  sourceVerifiedAt: string | null;
   entityId: string | null;
   entityName: string | null;
   entityPhone: string | null;
@@ -40,6 +41,7 @@ export type Meeting = {
 export type City = {
   slug: string;
   label: string;
+  state: string | null;
   country: string | null;
   lat: number;
   lng: number;

@@ -52,8 +52,9 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
         >
           {FELLOWSHIP_LABEL[meeting.fellowship ?? "aa"]}
         </Badge>
+        <Badge>source verified</Badge>
         <Badge>{meeting.attendance}</Badge>
-        {isStale(meeting.updatedAt) ? <Badge>listing may be old</Badge> : null}
+        {isStale(meeting.sourceVerifiedAt) ? <Badge>listing may be old</Badge> : null}
         {meeting.types.map((type) => (
           <Badge key={type}>{labelForType(type)}</Badge>
         ))}
@@ -128,12 +129,18 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
         </p>
         {meeting.entityPhone ? <p>{meeting.entityPhone}</p> : null}
         {meeting.entityUrl ? (
-          <a className="underline" href={meeting.entityUrl}>
+          <a className="underline" href={meeting.entityUrl} target="_blank" rel="noreferrer">
             {meeting.entityUrl}
           </a>
         ) : null}
-        {meeting.updatedAt ? (
+        {meeting.sourceVerifiedAt ? (
           <p className="mt-2 text-muted">
+            Confirmed in the official feed:{" "}
+            {new Date(meeting.sourceVerifiedAt).toLocaleString()}
+          </p>
+        ) : null}
+        {meeting.updatedAt ? (
+          <p className="text-muted">
             Last updated in the feed: {new Date(meeting.updatedAt).toLocaleString()}
           </p>
         ) : (

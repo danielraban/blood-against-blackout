@@ -2,6 +2,12 @@ import { encodeGeohash4 } from "./geo";
 import { slugify } from "./utils";
 import type { Attendance } from "./types";
 import type { Fellowship } from "./fellowship";
+import {
+  cleanLocationPart,
+  isUsableCityLabel,
+  normalizeCountry,
+  normalizeState,
+} from "./location";
 
 export type RawMeeting = Record<string, unknown>;
 
@@ -111,9 +117,13 @@ function cityFromFormatted(formatted: string | null, country: string | null) {
     if (skip.has(lower) || /^\d/.test(part) || part.length > 40) continue;
     if (/^[A-Z]{1,2}\d/.test(part)) continue;
     if (lower === "london" || lower.includes("london")) return "London";
-    if (parts.indexOf(part) >= 1) return part.replace(/\s+[A-Z]{2}$/, "").trim();
+    if (parts.indexOf(part) >= 1) {
+      const candidate = cleanLocationPart(part.replace(/\s+[A-Z]{2}(?:\s+\d.*)?$/, ""));
+      if (isUsableCityLabel(candidate)) return candidate;
+    }
   }
-  return parts[1] ?? null;
+  const fallback = cleanLocationPart(parts[1] ?? null);
+  return isUsableCityLabel(fallback) ? fallback : null;
 }
 
 function attendanceOf(raw: RawMeeting, types: string[]): Attendance {
@@ -137,7 +147,16 @@ function withGeo(
   lat: number | null,
   lng: number | null,
 ): { lat: number | null; lng: number | null; geohash4: string | null } {
-  if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+  if (
+    lat == null ||
+    lng == null ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
     return { lat: null, lng: null, geohash4: null };
   }
   return { lat, lng, geohash4: encodeGeohash4(lat, lng) };
@@ -206,11 +225,19 @@ export function parseTsmlMeeting(
       .filter(Boolean)
       .join(", ") ||
     null;
-  const country = asString(raw.country);
-  const city =
-    asString(raw.city) ||
-    asString(raw.region) ||
-    cityFromFormatted(formattedAddress, country);
+  const country = normalizeCountry(asString(raw.country));
+  const explicitCity = cleanLocationPart(asString(raw.city));
+  const inferredCity = cityFromFormatted(formattedAddress, country);
+  const city = isUsableCityLabel(explicitCity)
+    ? explicitCity
+    : isUsableCityLabel(inferredCity)
+      ? inferredCity
+      : null;
+  const stateCandidate = normalizeState(asString(raw.state) || asString(raw.region));
+  const state =
+    city && stateCandidate?.localeCompare(city, undefined, { sensitivity: "base" }) === 0
+      ? null
+      : stateCandidate;
 
   return {
     feedId,
@@ -227,7 +254,7 @@ export function parseTsmlMeeting(
     locationName: asString(raw.location),
     address: asString(raw.address),
     city,
-    state: asString(raw.state) || asString(raw.region),
+    state,
     postalCode: asString(raw.postal_code),
     country,
     formattedAddress,
@@ -267,11 +294,20 @@ export function parseBmltMeeting(
     attendance = "hybrid";
   if (conferenceUrl && attendance === "in-person") attendance = "hybrid";
 
-  const city = asString(raw.location_municipality) || asString(raw.location_city_subsection);
+  const rawCity =
+    cleanLocationPart(asString(raw.location_municipality)) ||
+    cleanLocationPart(asString(raw.location_city_subsection));
+  const city = isUsableCityLabel(rawCity) ? rawCity : null;
   const address = asString(raw.location_street);
-  const state = asString(raw.location_province) || asString(raw.location_sub_province);
+  const stateCandidate = normalizeState(
+    asString(raw.location_province) || asString(raw.location_sub_province),
+  );
+  const state =
+    city && stateCandidate?.localeCompare(city, undefined, { sensitivity: "base" }) === 0
+      ? null
+      : stateCandidate;
   const postalCode = asString(raw.location_postal_code_1);
-  const country = asString(raw.location_nation);
+  const country = normalizeCountry(asString(raw.location_nation));
   const formattedAddress =
     [address, city, state, postalCode, country].filter(Boolean).join(", ") || null;
   const notes = [asString(raw.comments), asString(raw.virtual_meeting_additional_info)]

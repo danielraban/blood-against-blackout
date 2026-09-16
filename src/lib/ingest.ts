@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "./db";
 import { cities, entities, feeds, geocodeCache, ingestRuns, meetings } from "./schema";
@@ -15,6 +15,8 @@ import {
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { assertPublicHttpsUrl } from "./url-security";
+import { applyRegionHint, isUsableCityLabel } from "./location";
+import { SOURCE_FRESHNESS_HOURS } from "./verification";
 
 const seedFeeds = JSON.parse(
   readFileSync(join(process.cwd(), "src/data/feeds.json"), "utf8"),
@@ -150,33 +152,75 @@ async function rebuildCities() {
   await db.batch([
     db.delete(cities),
     db.execute(sql`
-      with aggregated as (
+      with eligible as (
         select
-          trim(both '-' from regexp_replace(lower(coalesce(city, 'unknown')), '[^a-z0-9]+', '-', 'g'))
-            || '-' ||
-          trim(both '-' from regexp_replace(lower(coalesce(country, 'xx')), '[^a-z0-9]+', '-', 'g')) as slug,
-          city as label,
-          country,
+          m.*,
+          case when m.country is null then substring(m.geohash4 from 1 for 3) else '' end as identity_scope,
+          substring(m.geohash4 from 1 for 3) as geo_cluster
+        from meetings m
+        inner join feeds f on f.id = m.feed_id
+        where m.city is not null
+          and lower(m.city) not in ('online', 'virtual', 'regional')
+          and m.day is not null
+          and m.time is not null
+          and (
+            m.attendance = 'online'
+            or (
+              m.formatted_address is not null
+              and m.lat is not null
+              and m.lng is not null
+            )
+          )
+          and f.status = 'ok'
+          and f.last_ok_at >= now() - (${SOURCE_FRESHNESS_HOURS} * interval '1 hour')
+      ),
+      cluster_counts as (
+        select city, state, country, identity_scope, geo_cluster, count(*) as cluster_count
+        from eligible
+        where geo_cluster is not null
+        group by city, state, country, identity_scope, geo_cluster
+      ),
+      dominant_clusters as (
+        select city, state, country, identity_scope, geo_cluster
+        from (
+          select *, row_number() over (
+            partition by city, state, country, identity_scope
+            order by cluster_count desc, geo_cluster
+          ) as cluster_rank
+          from cluster_counts
+        ) ranked_clusters
+        where cluster_rank = 1
+      ),
+      aggregated as (
+        select
+          trim(both '-' from regexp_replace(lower(e.city), '[^[:alnum:]]+', '-', 'g'))
+            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.state), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
+            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.country), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
+            || case when e.country is null then '-' || coalesce(e.identity_scope, 'geo') else '' end as slug,
+          e.city as label,
+          e.state,
+          e.country,
           coalesce(
-            avg(lat) filter (where attendance = 'in-person' and lat is not null),
-            avg(lat) filter (where lat is not null)
+            avg(e.lat) filter (where e.attendance = 'in-person'),
+            avg(e.lat)
           )::real as lat,
           coalesce(
-            avg(lng) filter (where attendance = 'in-person' and lng is not null),
-            avg(lng) filter (where lng is not null)
+            avg(e.lng) filter (where e.attendance = 'in-person'),
+            avg(e.lng)
           )::real as lng,
           coalesce(
-            mode() within group (order by geohash4) filter (where attendance = 'in-person' and geohash4 is not null),
-            mode() within group (order by geohash4) filter (where geohash4 is not null)
+            mode() within group (order by e.geohash4) filter (where e.attendance = 'in-person'),
+            mode() within group (order by e.geohash4)
           ) as geohash4,
           count(*)::int as meeting_count
-        from meetings
-        where city is not null
-        group by city, country
-        having coalesce(
-          avg(lat) filter (where attendance = 'in-person' and lat is not null),
-          avg(lat) filter (where lat is not null)
-        ) is not null
+        from eligible e
+        inner join dominant_clusters d
+          on d.city = e.city
+          and d.state is not distinct from e.state
+          and d.country is not distinct from e.country
+          and d.identity_scope = e.identity_scope
+          and d.geo_cluster = e.geo_cluster
+        group by e.city, e.state, e.country, e.identity_scope
       ),
       ranked as (
         select *, row_number() over (
@@ -184,8 +228,8 @@ async function rebuildCities() {
         ) as rank
         from aggregated
       )
-      insert into cities (slug, label, country, lat, lng, geohash4, meeting_count)
-      select slug, label, country, lat, lng, geohash4, meeting_count
+      insert into cities (slug, label, state, country, lat, lng, geohash4, meeting_count)
+      select slug, label, state, country, lat, lng, geohash4, meeting_count
       from ranked
       where rank = 1
     `),
@@ -196,9 +240,18 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
   const db = getDb();
   await seedFeedCatalog();
   const startedAt = new Date();
+  await db
+    .update(ingestRuns)
+    .set({ status: "incomplete", finishedAt: new Date() })
+    .where(
+      and(
+        eq(ingestRuns.status, "running"),
+        lt(ingestRuns.startedAt, new Date(Date.now() - 10 * 60 * 1000)),
+      ),
+    );
   const insertedRuns = await db
     .insert(ingestRuns)
-    .values({ startedAt })
+    .values({ startedAt, status: "running" })
     .returning({ id: ingestRuns.id });
   const runId = insertedRuns[0]?.id;
 
@@ -218,13 +271,22 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
   const errors: string[] = [];
 
   for (const feed of allFeeds) {
+    const attemptedAt = new Date();
     try {
       const fellowship = asFellowship(feed.fellowship);
       const format = asFeedFormat(feed.format);
       const raw = await fetchJson(feed.url);
-      const parsed = raw.flatMap((item) =>
-        parseFeedMeetings(item, feed.id, fellowship, format),
-      );
+      const parsed = raw
+        .flatMap((item) => parseFeedMeetings(item, feed.id, fellowship, format))
+        .map((item) => {
+          const jurisdiction = applyRegionHint(item, feed.regionHint);
+          return {
+            ...item,
+            city: isUsableCityLabel(item.city) ? item.city : null,
+            state: jurisdiction.state,
+            country: jurisdiction.country,
+          };
+        });
 
       const entityRows = new Map<string, typeof entities.$inferInsert>();
       for (const item of parsed) {
@@ -285,6 +347,15 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
           if (item.attendance !== "online" && (lat == null || lng == null)) {
             continue;
           }
+          if (item.day == null || item.time == null) {
+            continue;
+          }
+          if (
+            item.attendance !== "online" &&
+            (!item.formattedAddress || !item.city)
+          ) {
+            continue;
+          }
           meetingRows.push({
             feedId: item.feedId,
             slug: item.slug,
@@ -312,6 +383,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
             notes: item.notes,
             locationNotes: item.locationNotes,
             updatedAt: item.updatedAt,
+            verifiedAt: attemptedAt,
             entityId: item.entityName
               ? `${feed.id}:${slugify(item.entityName)}`
               : null,
@@ -376,6 +448,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
               notes: sql`excluded.notes`,
               locationNotes: sql`excluded.location_notes`,
               updatedAt: sql`excluded.updated_at`,
+              verifiedAt: sql`excluded.verified_at`,
               entityId: sql`excluded.entity_id`,
             },
           }),
@@ -386,8 +459,8 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
           .update(feeds)
           .set({
             status: "ok",
-            lastAttemptAt: new Date(),
-            lastOkAt: new Date(),
+            lastAttemptAt: attemptedAt,
+            lastOkAt: attemptedAt,
             lastError: null,
             meetingCount: meetingRows.length,
           })
@@ -404,7 +477,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
         .update(feeds)
         .set({
           status: "error",
-          lastAttemptAt: new Date(),
+          lastAttemptAt: attemptedAt,
           lastError: message.slice(0, 500),
         })
         .where(eq(feeds.id, feed.id));
@@ -421,6 +494,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
         feedsFail,
         meetingsUpserted,
         errorSummary: errors.slice(0, 20).join("\n") || null,
+        status: feedsFail > 0 ? "completed_with_errors" : "completed",
       })
       .where(eq(ingestRuns.id, runId));
   }

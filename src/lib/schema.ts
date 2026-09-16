@@ -71,6 +71,7 @@ export const meetings = pgTable(
     notes: text("notes"),
     locationNotes: text("location_notes"),
     updatedAt: timestamp("updated_at", { withTimezone: true }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
     entityId: text("entity_id").references(() => entities.id, {
       onDelete: "set null",
     }),
@@ -89,6 +90,7 @@ export const cities = pgTable(
   {
     slug: text("slug").primaryKey(),
     label: text("label").notNull(),
+    state: text("state"),
     country: text("country"),
     lat: real("lat").notNull(),
     lng: real("lng").notNull(),
@@ -96,7 +98,12 @@ export const cities = pgTable(
     meetingCount: integer("meeting_count").notNull().default(0),
   },
   (table) => [
-    uniqueIndex("cities_label_country_idx").on(table.label, table.country),
+    uniqueIndex("cities_label_state_country_idx").on(
+      table.label,
+      table.state,
+      table.country,
+      table.geohash4,
+    ),
     index("cities_geohash_idx").on(table.geohash4),
   ],
 );
@@ -109,6 +116,7 @@ export const ingestRuns = pgTable("ingest_runs", {
   feedsFail: integer("feeds_fail").notNull().default(0),
   meetingsUpserted: integer("meetings_upserted").notNull().default(0),
   errorSummary: text("error_summary"),
+  status: text("status").notNull().default("running"),
 });
 
 export const geocodeCache = pgTable("geocode_cache", {

@@ -12,7 +12,9 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "ingest": "tsx src/scripts/ingest.ts",
+    "ingest": "node --import tsx src/scripts/ingest.ts",
+    "audit": "node --import tsx src/scripts/audit-meetings.ts",
+    "test": "node --import tsx --test src/lib/*.test.ts",
     "sample": "node src/scripts/load-sample.mjs",
     "discover": "node src/scripts/discover.mjs"
   },

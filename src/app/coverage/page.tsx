@@ -68,6 +68,7 @@ export default function CoveragePage() {
       notes: null,
       locationNotes: null,
       updatedAt: null,
+      sourceVerifiedAt: null,
       entityId: null,
       entityName: null,
       entityPhone: null,
