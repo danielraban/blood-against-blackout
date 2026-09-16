@@ -6,5 +6,9 @@ export function getSiteUrl() {
     process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
   if (vercelHost) return new URL(`https://${vercelHost}`);
 
-  return new URL("http://localhost:3000");
+  return new URL(
+    process.env.NODE_ENV === "production"
+      ? "https://bloodagainstblackout.com"
+      : "http://localhost:3000",
+  );
 }

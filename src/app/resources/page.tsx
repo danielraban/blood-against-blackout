@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ComicStrip } from "@/components/comic-strip";
 
 export default function ResourcesPage() {
-  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+  const supportEmail =
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "danielraban@proton.me";
   return (
     <article className="space-y-6">
       <h1 className="comic-wordmark font-display text-5xl uppercase tracking-tight">Resources</h1>
@@ -90,9 +91,11 @@ export default function ResourcesPage() {
           browser only.
         </p>
         <p>
-          The map loads tiles from MapTiler only after you choose to show it.
-          MapTiler receives the visible map area and standard request metadata;
-          blood against blackout does not send it an account identity.
+          The map loads tiles from OpenFreeMap only after you choose to show it.
+          OpenFreeMap receives the visible map area and standard request
+          metadata. Its public service does not require accounts, API keys, or
+          cookies, and blood against blackout does not send it an account
+          identity.
         </p>
       </section>
       <section className="space-y-2">
@@ -102,20 +105,14 @@ export default function ResourcesPage() {
           entities. The source office remains responsible for its listing.
           Use the report link on a meeting when available.
         </p>
-        {supportEmail ? (
-          <p>
-            For privacy questions, artwork rights, corrections, or takedown
-            requests, email{" "}
-            <a className="text-cool underline" href={`mailto:${supportEmail}`}>
-              {supportEmail}
-            </a>
-            .
-          </p>
-        ) : (
-          <p className="text-warn">
-            Operator support contact will be published before production launch.
-          </p>
-        )}
+        <p>
+          For privacy questions, artwork rights, corrections, or takedown
+          requests, email{" "}
+          <a className="text-cool underline" href={`mailto:${supportEmail}`}>
+            {supportEmail}
+          </a>
+          .
+        </p>
       </section>
     </article>
   );

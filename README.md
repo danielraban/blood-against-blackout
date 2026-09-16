@@ -36,10 +36,10 @@ There is no single national AA feed. blood against blackout uses the same public
 ## Vercel production
 
 1. Create a Vercel project from this repository and provision or connect Neon.
-2. Add all variables from `.env.example` to Preview and Production. Restrict the MapTiler key to those origins.
+2. Add all variables from `.env.example` to Preview and Production.
 3. Set `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS origin and redeploy.
 4. Run `npm run db:migrate`, then `npm run ingest`, against the production Neon branch.
 5. Deploy a preview and verify `/api/health` returns `{"ok":true}`.
 6. Promote the verified preview. `vercel.json` runs a bounded nightly ingest; Vercel sends `CRON_SECRET` as its bearer token.
 
-Never commit `.env.local`. The admin cookie is signed and expires after seven days. Opening the optional map sends the visible map area and standard request metadata to MapTiler.
+Never commit `.env.local`. The admin cookie is signed and expires after seven days. Opening the optional map sends the visible map area and standard request metadata to OpenFreeMap.

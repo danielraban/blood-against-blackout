@@ -5,8 +5,6 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { RankedMeeting } from "@/lib/search";
 
-const mapTilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
-
 export function MeetingMap({
   meetings,
   origin,
@@ -19,13 +17,12 @@ export function MeetingMap({
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
-    if (!mapTilerKey) return;
     const center: [number, number] = origin
       ? [origin.lng, origin.lat]
       : [-0.12, 51.5];
     const map = new maplibregl.Map({
       container: ref.current,
-      style: `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${encodeURIComponent(mapTilerKey)}`,
+      style: "https://tiles.openfreemap.org/styles/liberty",
       center,
       zoom: 11,
       attributionControl: { compact: true },
@@ -70,15 +67,7 @@ export function MeetingMap({
 
   return (
     <div className="border-2 border-border bg-card">
-      {!mapTilerKey ? (
-        <p className="p-4 text-sm text-warn">
-          Map tiles are not configured. Meeting lists and directions still work.
-        </p>
-      ) : null}
-      <div
-        ref={ref}
-        className={mapTilerKey ? "h-64 w-full overflow-hidden md:h-[28rem]" : "hidden"}
-      />
+      <div ref={ref} className="h-64 w-full overflow-hidden md:h-[28rem]" />
     </div>
   );
 }
