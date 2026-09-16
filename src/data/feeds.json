@@ -9,19 +9,22 @@
     "id": "aasfmarin",
     "name": "San Francisco / Marin",
     "url": "https://aasfmarin.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "aasantacruz",
     "name": "Santa Cruz",
     "url": "https://aasantacruz.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "atlantaaa",
     "name": "Atlanta",
     "url": "https://atlantaaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-GA"
+    "regionHint": "US-GA",
+    "status": "disabled"
   },
   {
     "id": "seattleaa",
@@ -33,25 +36,29 @@
     "id": "aapdx",
     "name": "Portland Oregon",
     "url": "https://www.pdxaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-OR"
+    "regionHint": "US-OR",
+    "status": "disabled"
   },
   {
     "id": "austinaa",
     "name": "Austin",
     "url": "https://austinaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-TX"
+    "regionHint": "US-TX",
+    "status": "disabled"
   },
   {
     "id": "aasanjose",
     "name": "San Jose",
     "url": "https://aasanjose.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "eastbayaa",
     "name": "East Bay",
     "url": "https://eastbayaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "aasandiego",
@@ -63,13 +70,15 @@
     "id": "lacoaa",
     "name": "Los Angeles Central Office",
     "url": "https://lacoaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "aaboston",
     "name": "Boston",
     "url": "https://aaboston.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MA"
+    "regionHint": "US-MA",
+    "status": "disabled"
   },
   {
     "id": "nyintergroup",
@@ -81,7 +90,8 @@
     "id": "chicagoaa",
     "name": "Chicago",
     "url": "https://chicagoaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-IL"
+    "regionHint": "US-IL",
+    "status": "disabled"
   },
   {
     "id": "denveraa",
@@ -99,7 +109,8 @@
     "id": "aadallas",
     "name": "Dallas",
     "url": "https://aadallas.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-TX"
+    "regionHint": "US-TX",
+    "status": "disabled"
   },
   {
     "id": "aasanantonio",
@@ -111,19 +122,22 @@
     "id": "miami-aa",
     "name": "Miami",
     "url": "https://www.aamiami.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-FL"
+    "regionHint": "US-FL",
+    "status": "disabled"
   },
   {
     "id": "tampa-aa",
     "name": "Tampa",
     "url": "https://aatampa-area.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-FL"
+    "regionHint": "US-FL",
+    "status": "disabled"
   },
   {
     "id": "orlandoaa",
     "name": "Orlando",
     "url": "https://orlandocentraloffice.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-FL"
+    "regionHint": "US-FL",
+    "status": "disabled"
   },
   {
     "id": "aa-dc",
@@ -135,25 +149,29 @@
     "id": "aabaltimore",
     "name": "Baltimore",
     "url": "https://baltimoreaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MD"
+    "regionHint": "US-MD",
+    "status": "disabled"
   },
   {
     "id": "aaphiladelphia",
     "name": "Philadelphia",
     "url": "https://www.aaphiladelphia.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-PA"
+    "regionHint": "US-PA",
+    "status": "disabled"
   },
   {
     "id": "minneapolis",
     "name": "Minneapolis",
     "url": "https://aaminnesota.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MN"
+    "regionHint": "US-MN",
+    "status": "disabled"
   },
   {
     "id": "detroit",
     "name": "Detroit",
     "url": "https://aa-semi.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MI"
+    "regionHint": "US-MI",
+    "status": "disabled"
   },
   {
     "id": "stlouis",
@@ -171,7 +189,8 @@
     "id": "tucson",
     "name": "Tucson",
     "url": "https://aasoaaz.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-AZ"
+    "regionHint": "US-AZ",
+    "status": "disabled"
   },
   {
     "id": "vegas",
@@ -183,13 +202,15 @@
     "id": "sacramento",
     "name": "Sacramento",
     "url": "https://aasacramento.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "honolulu",
     "name": "Hawaii",
     "url": "https://oahucentraloffice.com/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-HI"
+    "regionHint": "US-HI",
+    "status": "disabled"
   },
   {
     "id": "toronto",
@@ -201,7 +222,8 @@
     "id": "vancouver",
     "name": "Vancouver",
     "url": "https://vancouveraa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "CA-BC"
+    "regionHint": "CA-BC",
+    "status": "disabled"
   },
   {
     "id": "calgary",
@@ -212,7 +234,7 @@
   {
     "id": "london-uk",
     "name": "London AA",
-    "url": "https://aa-london.com/api/meetingguide/",
+    "url": "https://aa-london.com/api/meetingguide",
     "regionHint": "GB-LON",
     "fellowship": "aa",
     "format": "tsml"
@@ -221,25 +243,29 @@
     "id": "manchester-uk",
     "name": "Manchester UK",
     "url": "https://aamanch.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB-MAN"
+    "regionHint": "GB-MAN",
+    "status": "disabled"
   },
   {
     "id": "glasgow-uk",
     "name": "Glasgow",
     "url": "https://aaglasgow.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB-SCT"
+    "regionHint": "GB-SCT",
+    "status": "disabled"
   },
   {
     "id": "dublin",
     "name": "Ireland",
     "url": "https://www.alcoholicsanonymous.ie/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "IE"
+    "regionHint": "IE",
+    "status": "disabled"
   },
   {
     "id": "sydney",
     "name": "Sydney",
     "url": "https://aasydney.org.au/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "AU-NSW"
+    "regionHint": "AU-NSW",
+    "status": "disabled"
   },
   {
     "id": "melbourne",
@@ -263,19 +289,22 @@
     "id": "cer-europe",
     "name": "Continental European Region",
     "url": "https://alcoholics-anonymous.eu/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "EU"
+    "regionHint": "EU",
+    "status": "disabled"
   },
   {
     "id": "aa-southmidlands",
     "name": "South Midlands UK",
     "url": "https://aasouthmidlands.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB"
+    "regionHint": "GB",
+    "status": "disabled"
   },
   {
     "id": "westkent-uk",
     "name": "West Kent UK",
     "url": "https://westkentaa.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB"
+    "regionHint": "GB",
+    "status": "disabled"
   },
   {
     "id": "area59",
@@ -287,19 +316,22 @@
     "id": "nm-aa",
     "name": "New Mexico Area 46",
     "url": "https://nm-aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-NM"
+    "regionHint": "US-NM",
+    "status": "disabled"
   },
   {
     "id": "contracosta",
     "name": "Contra Costa",
     "url": "https://contracostaaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "ncintergroup",
     "name": "Northern California Intergroup",
     "url": "https://ncintergroup.com/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "na-ireland",
@@ -363,6 +395,14 @@
     "url": "https://ca4la.org/wp-admin/admin-ajax.php?action=meetings",
     "regionHint": "US-CA",
     "fellowship": "ca",
-    "format": "tsml"
+    "format": "tsml",
+    "status": "disabled"
+  },
+  {
+    "id": "memphis-aa-org",
+    "name": "Memphis AA",
+    "url": "https://memphis-aa.org/wp-admin/admin-ajax.php?action=meetings",
+    "regionHint": "US-TN",
+    "status": "disabled"
   }
 ]

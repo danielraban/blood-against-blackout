@@ -8,6 +8,7 @@ import { asFellowship, asFeedFormat } from "./fellowship";
 import {
   asMeetingArray,
   bmltSearchUrl,
+  dedupeMeetingsBySlug,
   parseFeedMeetings,
   parseTsmlMeeting,
   type RawMeeting,
@@ -15,6 +16,12 @@ import {
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { assertPublicHttpsUrl } from "./url-security";
+import {
+  canonicalFeedUrl,
+  DUPLICATE_FEED_IDS,
+  fallbackFeedUrls,
+  isProbablyJson,
+} from "./feed-url";
 import { applyRegionHint, isUsableCityLabel } from "./location";
 import { SOURCE_FRESHNESS_HOURS } from "./verification";
 
@@ -27,17 +34,24 @@ const seedFeeds = JSON.parse(
   regionHint: string;
   fellowship?: string;
   format?: string;
+  status?: "disabled";
 }[];
 
 const bmltServers = JSON.parse(
   readFileSync(join(process.cwd(), "src/data/bmlt-servers.json"), "utf8"),
-) as { id: string; name: string; url: string; regionHint: string }[];
+) as {
+  id: string;
+  name: string;
+  url: string;
+  regionHint: string;
+  status?: "disabled";
+}[];
 
 export function parseRawMeeting(raw: RawMeeting, feedId: string) {
   return parseTsmlMeeting(raw, feedId, "aa");
 }
 
-async function fetchJson(url: string) {
+async function readMeetingJson(url: string) {
   let current = await assertPublicHttpsUrl(url);
   for (let redirects = 0; redirects <= 3; redirects += 1) {
     const response = await fetch(current, {
@@ -58,10 +72,34 @@ async function fetchJson(url: string) {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    const data = await response.json();
-    return asMeetingArray(data);
+    const body = await response.text();
+    if (!isProbablyJson(response.headers.get("content-type"), body)) {
+      throw new Error("Feed did not return JSON");
+    }
+    try {
+      return asMeetingArray(JSON.parse(body));
+    } catch {
+      throw new Error("Feed did not return JSON");
+    }
   }
   throw new Error("Feed redirect failed");
+}
+
+async function fetchJson(url: string) {
+  const tried = new Set<string>();
+  const candidates = [url, ...fallbackFeedUrls(url)];
+  let lastError: Error | null = null;
+  for (const candidate of candidates) {
+    const key = canonicalFeedUrl(candidate);
+    if (tried.has(key)) continue;
+    tried.add(key);
+    try {
+      return await readMeetingJson(candidate);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Feed fetch failed");
+    }
+  }
+  throw lastError ?? new Error("Feed fetch failed");
 }
 
 async function geocodeAddress(query: string) {
@@ -99,49 +137,78 @@ async function geocodeAddress(query: string) {
 
 export async function seedFeedCatalog() {
   const db = getDb();
+  if (DUPLICATE_FEED_IDS.length) {
+    for (const id of DUPLICATE_FEED_IDS) {
+      await db
+        .update(feeds)
+        .set({
+          status: "disabled",
+          lastError: "Duplicate of a canonical feed URL",
+          url: `https://disabled.invalid/${id}`,
+        })
+        .where(eq(feeds.id, id));
+    }
+  }
+  const seenUrls = new Set<string>();
   for (const feed of seedFeeds) {
+    const url = canonicalFeedUrl(feed.url);
+    if (seenUrls.has(url)) continue;
+    seenUrls.add(url);
+    const status = feed.status === "disabled" ? "disabled" : "pending";
     await db
       .insert(feeds)
       .values({
         id: feed.id,
         name: feed.name,
-        url: feed.url,
+        url,
         regionHint: feed.regionHint,
         fellowship: asFellowship(feed.fellowship),
         format: asFeedFormat(feed.format),
-        status: "pending",
+        status,
+        lastError: status === "disabled" ? "No public JSON feed" : null,
       })
       .onConflictDoUpdate({
         target: feeds.id,
         set: {
           name: feed.name,
-          url: feed.url,
+          url,
           regionHint: feed.regionHint,
           fellowship: asFellowship(feed.fellowship),
           format: asFeedFormat(feed.format),
+          ...(status === "disabled"
+            ? { status, lastError: "No public JSON feed" }
+            : {}),
         },
       });
   }
   for (const server of bmltServers) {
+    const url = canonicalFeedUrl(bmltSearchUrl(server.url));
+    if (seenUrls.has(url)) continue;
+    seenUrls.add(url);
+    const status = server.status === "disabled" ? "disabled" : "pending";
     await db
       .insert(feeds)
       .values({
         id: server.id,
         name: server.name,
-        url: bmltSearchUrl(server.url),
+        url,
         regionHint: server.regionHint,
         fellowship: "na",
         format: "bmlt",
-        status: "pending",
+        status,
+        lastError: status === "disabled" ? "No public JSON feed" : null,
       })
       .onConflictDoUpdate({
         target: feeds.id,
         set: {
           name: server.name,
-          url: bmltSearchUrl(server.url),
+          url,
           regionHint: server.regionHint,
           fellowship: "na",
           format: "bmlt",
+          ...(status === "disabled"
+            ? { status, lastError: "No public JSON feed" }
+            : {}),
         },
       });
   }
@@ -314,9 +381,11 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
           let lat = item.lat;
           let lng = item.lng;
           let geohash4 = item.geohash4;
+          let attendance = item.attendance;
+          let types = item.types;
           if (
             (lat == null || lng == null) &&
-            item.attendance !== "online" &&
+            attendance !== "online" &&
             item.formattedAddress &&
             geocodeBudget > 0
           ) {
@@ -328,7 +397,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
               geohash4 = encodeGeohash4(geo.lat, geo.lng);
             }
           }
-          if ((lat == null || lng == null) && item.attendance !== "online" && item.city) {
+          if ((lat == null || lng == null) && attendance !== "online" && item.city) {
             const cityKey = [item.city, item.state, item.country].filter(Boolean).join(", ");
             let geo = cityGeo.get(cityKey);
             if (!geo && cityGeo.size < 12) {
@@ -344,14 +413,32 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
               geohash4 = encodeGeohash4(geo.lat, geo.lng);
             }
           }
-          if (item.attendance !== "online" && (lat == null || lng == null)) {
+          if ((lat == null || lng == null) && item.conferenceUrl) {
+            attendance = "online";
+            if (!types.includes("ONL")) types = [...types, "ONL"];
+          }
+          if (attendance !== "online" && (lat == null || lng == null)) {
             continue;
+          }
+          if (attendance === "online" && !geohash4 && item.city) {
+            const cityKey = [item.city, item.state, item.country]
+              .filter(Boolean)
+              .join(", ");
+            let geo = cityGeo.get(cityKey);
+            if (!geo && cityGeo.size < 12) {
+              const resolved = await geocodeAddress(cityKey);
+              if (resolved) {
+                geo = resolved;
+                cityGeo.set(cityKey, resolved);
+              }
+            }
+            if (geo) geohash4 = encodeGeohash4(geo.lat, geo.lng);
           }
           if (item.day == null || item.time == null) {
             continue;
           }
           if (
-            item.attendance !== "online" &&
+            attendance !== "online" &&
             (!item.formattedAddress || !item.city)
           ) {
             continue;
@@ -365,8 +452,8 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
             time: item.time,
             endTime: item.endTime,
             timezone: item.timezone,
-            types: item.types,
-            attendance: item.attendance,
+            types,
+            attendance,
             fellowship: item.fellowship,
             locationName: item.locationName,
             address: item.address,
@@ -389,7 +476,8 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
               : null,
           });
       }
-      if (parsed.length > 0 && meetingRows.length === 0) {
+      const uniqueMeetingRows = dedupeMeetingsBySlug(meetingRows);
+      if (parsed.length > 0 && uniqueMeetingRows.length === 0) {
         throw new Error("Feed parsed but produced no usable meetings");
       }
 
@@ -415,8 +503,8 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
         );
       }
       operations.push(db.delete(meetings).where(eq(meetings.feedId, feed.id)));
-      for (let i = 0; i < meetingRows.length; i += chunkSize) {
-        const chunk = meetingRows.slice(i, i + chunkSize);
+      for (let i = 0; i < uniqueMeetingRows.length; i += chunkSize) {
+        const chunk = uniqueMeetingRows.slice(i, i + chunkSize);
         operations.push(
           db
           .insert(meetings)
@@ -462,12 +550,12 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
             lastAttemptAt: attemptedAt,
             lastOkAt: attemptedAt,
             lastError: null,
-            meetingCount: meetingRows.length,
+            meetingCount: uniqueMeetingRows.length,
           })
           .where(eq(feeds.id, feed.id)),
       );
       await db.batch(operations as [BatchItem<"pg">, ...BatchItem<"pg">[]]);
-      meetingsUpserted += meetingRows.length;
+      meetingsUpserted += uniqueMeetingRows.length;
       feedsOk += 1;
     } catch (error) {
       feedsFail += 1;
@@ -517,12 +605,13 @@ export async function ingestOneFeed(
 ) {
   const db = getDb();
   const feedId = id || slugify(name || url);
+  const canonical = canonicalFeedUrl(url);
   await db
     .insert(feeds)
     .values({
       id: feedId,
       name: name || feedId,
-      url,
+      url: canonical,
       fellowship: asFellowship(fellowship),
       format: asFeedFormat(format),
       status: "pending",
@@ -531,7 +620,7 @@ export async function ingestOneFeed(
       target: feeds.id,
       set: {
         name: name || feedId,
-        url,
+        url: canonical,
         fellowship: asFellowship(fellowship),
         format: asFeedFormat(format),
         status: "pending",

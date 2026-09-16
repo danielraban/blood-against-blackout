@@ -126,20 +126,42 @@ function cityFromFormatted(formatted: string | null, country: string | null) {
   return isUsableCityLabel(fallback) ? fallback : null;
 }
 
+function hasPhysicalVenue(raw: RawMeeting) {
+  const lat =
+    asNumber(raw.latitude) ??
+    asNumber(raw.lat) ??
+    (typeof raw.coordinates === "string"
+      ? Number(raw.coordinates.split(",")[0])
+      : null);
+  const lng =
+    asNumber(raw.longitude) ??
+    asNumber(raw.lng) ??
+    (typeof raw.coordinates === "string"
+      ? Number(raw.coordinates.split(",")[1])
+      : null);
+  if (withGeo(lat, lng).lat != null) return true;
+  const location = asString(raw.location);
+  if (!location) return false;
+  const address = asString(raw.address) || asString(raw.formatted_address);
+  if (!address) return false;
+  const parts = address
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.length >= 2;
+}
+
 function attendanceOf(raw: RawMeeting, types: string[]): Attendance {
   const option = asString(raw.attendance_option)?.toLowerCase();
   if (option === "online") return "online";
   if (option === "hybrid") return "hybrid";
   if (option === "in_person" || option === "in-person") return "in-person";
-  const conference = asString(raw.conference_url) || asString(raw.conference_phone);
-  const hasGeo =
-    asNumber(raw.latitude) != null ||
-    asNumber(raw.lat) != null ||
-    Boolean(asString(raw.formatted_address) || asString(raw.address));
-  if (types.includes("ONL") && conference && !hasGeo) return "online";
-  if (types.includes("ONL") && conference && hasGeo) return "hybrid";
-  if (conference && hasGeo) return "hybrid";
-  if (conference && !hasGeo) return "online";
+  const conference =
+    asString(raw.conference_url) || asString(raw.conference_phone);
+  const hasVenue = hasPhysicalVenue(raw);
+  if (conference && !hasVenue) return "online";
+  if (conference && hasVenue) return "hybrid";
+  if (types.includes("ONL") && !hasVenue) return "online";
   return "in-person";
 }
 
@@ -210,6 +232,8 @@ export function parseTsmlMeeting(
   if (!name || !slug) return null;
 
   const types = asStringArray(raw.types).map((t) => t.toUpperCase());
+  const attendance = attendanceOf(raw, types);
+  if (attendance !== "in-person" && !types.includes("ONL")) types.push("ONL");
   const lat =
     asNumber(raw.latitude) ??
     asNumber(raw.lat) ??
@@ -218,7 +242,6 @@ export function parseTsmlMeeting(
     asNumber(raw.longitude) ??
     asNumber(raw.lng) ??
     (typeof raw.coordinates === "string" ? Number(raw.coordinates.split(",")[1]) : null);
-  const attendance = attendanceOf(raw, types);
   const formattedAddress =
     asString(raw.formatted_address) ||
     [asString(raw.address), asString(raw.city), asString(raw.state), asString(raw.postal_code)]
@@ -377,11 +400,25 @@ export function parseFeedMeetings(
     const parsed = parseTsmlMeeting({ ...raw, day }, feedId, fellowship);
     if (!parsed) continue;
     if (targets.length > 1 && day != null) {
-      parsed.slug = `${parsed.slug}-${day}`.slice(0, 64);
+      parsed.slug = uniqueDaySlug(parsed.slug, day);
     }
     rows.push(parsed);
   }
   return rows;
+}
+
+export function uniqueDaySlug(base: string, day: number) {
+  return `${base.slice(0, 60)}-${day}`;
+}
+
+export function dedupeMeetingsBySlug<T extends { feedId: string; slug: string }>(
+  rows: T[],
+) {
+  const chosen = new Map<string, T>();
+  for (const row of rows) {
+    chosen.set(`${row.feedId}:${row.slug}`, row);
+  }
+  return [...chosen.values()];
 }
 
 export function bmltSearchUrl(root: string) {

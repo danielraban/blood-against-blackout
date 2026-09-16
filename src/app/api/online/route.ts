@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { entities, feeds, meetings } from "@/lib/schema";
+import { collapseDuplicateMeetings } from "@/lib/search";
 import { toMeeting } from "@/lib/slices";
 import {
   freshFeedPredicate,
@@ -45,11 +46,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       {
-        meetings: rows.map(({ meeting, feed }) =>
-          toMeeting(
-            meeting,
-            meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
-            feed,
+        meetings: collapseDuplicateMeetings(
+          rows.map(({ meeting, feed }) =>
+            toMeeting(
+              meeting,
+              meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
+              feed,
+            ),
           ),
         ),
         offset,

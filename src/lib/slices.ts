@@ -1,9 +1,10 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { entities, feeds, meetings } from "./schema";
+import { cities, entities, feeds, meetings } from "./schema";
 import { neighborGeohashes } from "./geo";
 import type { Meeting, SlicePayload } from "./types";
 import { asFellowship } from "./fellowship";
+import { collapseDuplicateMeetings } from "./search";
 import { freshFeedPredicate, safeMeetingPredicate } from "./verification";
 
 function toMeeting(
@@ -51,6 +52,13 @@ function toMeeting(
 export async function getSlice(geohash: string): Promise<SlicePayload> {
   const db = getDb();
   const neighbors = neighborGeohashes(geohash);
+  const localCities = await db
+    .select({ label: cities.label })
+    .from(cities)
+    .where(inArray(cities.geohash4, neighbors));
+  const cityLabels = [
+    ...new Set(localCities.map((city) => city.label).filter(Boolean)),
+  ];
   const rows = await db
     .select({ meeting: meetings, feed: feeds })
     .from(meetings)
@@ -60,8 +68,16 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
     )
     .where(
       and(
-        inArray(meetings.geohash4, neighbors),
         safeMeetingPredicate(),
+        or(
+          inArray(meetings.geohash4, neighbors),
+          cityLabels.length
+            ? and(
+                eq(meetings.attendance, "online"),
+                inArray(meetings.city, cityLabels),
+              )
+            : sql`false`,
+        ),
       ),
     );
 
@@ -82,11 +98,13 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
     geohash,
     neighbors,
     fetchedAt: new Date().toISOString(),
-    meetings: rows.map(({ meeting, feed }) =>
-      toMeeting(
-        meeting,
-        meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
-        feed,
+    meetings: collapseDuplicateMeetings(
+      rows.map(({ meeting, feed }) =>
+        toMeeting(
+          meeting,
+          meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
+          feed,
+        ),
       ),
     ),
     sourceFeeds: feedRows.map((f) => ({ id: f.id, name: f.name })),

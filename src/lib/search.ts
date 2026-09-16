@@ -1,6 +1,8 @@
 import type { Meeting, MeetingGroupKey, SearchFilters } from "./types";
 import { haversineKm } from "./geo";
 import { labelForType } from "./spec";
+import { resolveMeetingTimeZone, timezoneFromCoords } from "./timezone";
+import { slugify } from "./utils";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const COMBINING_MARKS = /[\u0300-\u036f]/g;
@@ -17,6 +19,61 @@ function normalizeSearchText(value: string) {
 
 export function weekdayLabel(day: number) {
   return WEEKDAYS[day] ?? "";
+}
+
+function venueKey(meeting: Meeting) {
+  const named = slugify(meeting.locationName ?? "");
+  if (named) return named;
+  const address = slugify(meeting.address ?? "");
+  if (address) return address;
+  if (meeting.lat != null && meeting.lng != null) {
+    return `${meeting.lat.toFixed(3)}:${meeting.lng.toFixed(3)}`;
+  }
+  return slugify(meeting.city ?? "unknown") || "unknown";
+}
+
+function duplicateKey(meeting: Meeting) {
+  return [
+    slugify(meeting.name),
+    meeting.day ?? "x",
+    meeting.time ?? "x",
+    meeting.fellowship ?? "aa",
+    meeting.attendance,
+    venueKey(meeting),
+  ].join("|");
+}
+
+function completeness(meeting: Meeting) {
+  return [
+    meeting.formattedAddress,
+    meeting.address,
+    meeting.notes,
+    meeting.conferenceUrl,
+    meeting.locationNotes,
+    meeting.types.length ? "types" : "",
+    meeting.sourceVerifiedAt,
+  ].filter(Boolean).length;
+}
+
+function isRicherMeeting(candidate: Meeting, current: Meeting) {
+  const byFields = completeness(candidate) - completeness(current);
+  if (byFields !== 0) return byFields > 0;
+  const candidateTime = Date.parse(candidate.sourceVerifiedAt ?? "") || 0;
+  const currentTime = Date.parse(current.sourceVerifiedAt ?? "") || 0;
+  if (candidateTime !== currentTime) return candidateTime > currentTime;
+  return candidate.slug < current.slug;
+}
+
+export function collapseDuplicateMeetings<T extends Meeting>(meetings: T[]): T[] {
+  const chosen = new Map<string, T>();
+  for (const meeting of meetings) {
+    const key = duplicateKey(meeting);
+    const existing = chosen.get(key);
+    if (!existing || isRicherMeeting(meeting, existing)) {
+      chosen.set(key, meeting);
+    }
+  }
+  return [...chosen.values()];
 }
 
 function parseMinutes(time: string | null) {
@@ -89,12 +146,15 @@ export function filterAndGroup(
   origin: { lat: number; lng: number } | null,
   now = new Date(),
 ): { groups: Record<MeetingGroupKey, RankedMeeting[]>; count: number } {
-  const local = zonedParts(now);
+  const originZone = origin
+    ? timezoneFromCoords(origin.lat, origin.lng)
+    : null;
+  const local = zonedParts(now, originZone);
   const today = filters.day === "today" ? local.weekday : filters.day;
 
   const ranked: RankedMeeting[] = [];
 
-  for (const meeting of meetings) {
+  for (const meeting of collapseDuplicateMeetings(meetings)) {
     if (
       filters.fellowship !== "all" &&
       (meeting.fellowship || "aa") !== filters.fellowship
@@ -174,9 +234,10 @@ export function filterAndGroup(
     const end = meetingEndMinutes(meeting);
 
     if (meetingDay != null && start != null) {
-      const tzParts = zonedParts(now, meeting.timezone);
-      const currentDay = meeting.timezone ? tzParts.weekday : local.weekday;
-      const currentMins = meeting.timezone ? tzParts.minutes : local.minutes;
+      const zone = resolveMeetingTimeZone(meeting, origin);
+      const clock = zonedParts(now, zone);
+      const currentDay = clock.weekday;
+      const currentMins = clock.minutes;
 
       let deltaDays = (meetingDay - currentDay + 7) % 7;
       let deltaMins = start - currentMins + deltaDays * 24 * 60;

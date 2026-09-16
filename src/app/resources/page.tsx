@@ -2,8 +2,7 @@ import Link from "next/link";
 import { ComicStrip } from "@/components/comic-strip";
 
 export default function ResourcesPage() {
-  const supportEmail =
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "danielraban@proton.me";
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
   return (
     <article className="space-y-6">
       <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">resources</h1>
@@ -105,14 +104,22 @@ export default function ResourcesPage() {
           entities. The source office remains responsible for its listing.
           Use the report link on a meeting when available.
         </p>
-        <p>
-          For privacy questions, artwork rights, corrections, or takedown
-          requests, email{" "}
-          <a className="text-cool underline" href={`mailto:${supportEmail}`}>
-            {supportEmail}
-          </a>
-          .
-        </p>
+        {supportEmail ? (
+          <p>
+            For privacy questions, artwork rights, corrections, or takedown
+            requests, email{" "}
+            <a className="text-cool underline" href={`mailto:${supportEmail}`}>
+              {supportEmail}
+            </a>
+            .
+          </p>
+        ) : (
+          <p>
+            For privacy questions, artwork rights, corrections, or takedown
+            requests, use the report link on a meeting or contact the local
+            office that publishes that feed.
+          </p>
+        )}
       </section>
     </article>
   );

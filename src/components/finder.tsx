@@ -78,6 +78,7 @@ export function Finder({
   const [showFilters, setShowFilters] = useState(false);
   const [offlineNote, setOfflineNote] = useState<string | null>(null);
   const filterPanelRef = useRef<HTMLElement>(null);
+  const cityInputRef = useRef<HTMLInputElement>(null);
 
   const loadSlice = useCallback(async (
     hash: string,
@@ -266,6 +267,10 @@ export function Finder({
   }
 
   async function pickCity(city: City) {
+    cityInputRef.current?.blur();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setSelectedCity(city);
     setCityQuery("");
     setCities([]);
@@ -333,7 +338,14 @@ export function Finder({
               </label>
               <Input
                 id="location-search"
+                ref={cityInputRef}
                 value={cityQuery}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint="search"
+                inputMode="search"
                 onChange={(event) => {
                   const value = event.target.value;
                   setCityQuery(value);
@@ -385,11 +397,12 @@ export function Finder({
                             aria-selected="false"
                             className="flex min-h-12 w-full items-center justify-between gap-4 px-4 text-left hover:bg-warn hover:text-black focus-visible:bg-warn focus-visible:text-black"
                             onPointerDown={(event) => {
-                              // Mobile Safari moves focus before dispatching click,
-                              // which can close and unmount the listbox too early.
                               event.preventDefault();
                             }}
-                            onClick={() => void pickCity(city)}
+                            onClick={() => {
+                              cityInputRef.current?.blur();
+                              void pickCity(city);
+                            }}
                           >
                             <span className="truncate">
                               {city.label}

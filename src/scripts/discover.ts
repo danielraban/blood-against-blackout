@@ -4,6 +4,7 @@ import { join } from "node:path";
 import hosts from "../data/discovery-hosts.json";
 import seedFeeds from "../data/feeds.json";
 import { getDb } from "../lib/db";
+import { canonicalFeedUrl } from "../lib/feed-url";
 import { feeds } from "../lib/schema";
 import { slugify } from "../lib/utils";
 
@@ -78,14 +79,18 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
 
 async function main() {
   const db = getDb();
-  const existing = new Set((await db.select({ url: feeds.url }).from(feeds)).map((f) => f.url));
+  const existing = new Set(
+    (await db.select({ url: feeds.url }).from(feeds)).map((f) =>
+      canonicalFeedUrl(f.url),
+    ),
+  );
   const candidates = [
     ...seedFeeds.map((f) => f.url),
     ...hosts.map(tsmlUrl),
-  ];
+  ].map(canonicalFeedUrl);
   const unique = [...new Set(candidates)];
   const found: SeedFeed[] = [...seedFeeds];
-  const foundUrls = new Set(found.map((f) => f.url));
+  const foundUrls = new Set(found.map((f) => canonicalFeedUrl(f.url)));
   let added = 0;
 
   await mapPool(unique, 8, async (url) => {
@@ -107,16 +112,17 @@ async function main() {
     }
     if (!result.ok) return;
     process.stdout.write(`  ok ${result.count} meetings\n`);
-    if (existing.has(resolved) || foundUrls.has(resolved)) return;
-    const host = new URL(resolved).hostname.replace(/^www\./, "");
+    const canonical = canonicalFeedUrl(resolved);
+    if (existing.has(canonical) || foundUrls.has(canonical)) return;
+    const host = new URL(canonical).hostname.replace(/^www\./, "");
     const row: SeedFeed = {
       id: slugify(host),
       name: host,
-      url: resolved,
+      url: canonical,
       regionHint: guessRegion(host),
     };
     found.push(row);
-    foundUrls.add(resolved);
+    foundUrls.add(canonical);
     await db
       .insert(feeds)
       .values({
