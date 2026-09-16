@@ -1,7 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === "production";
@@ -21,12 +20,6 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
   ...(isProduction ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
-
-const withSerwist = withSerwistInit({
-  swSrc: "src/app/sw.ts",
-  swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
-});
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
@@ -73,4 +66,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+export default nextConfig;

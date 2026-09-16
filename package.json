@@ -19,19 +19,17 @@
   "dependencies": {
     "@code4recovery/spec": "^1.1.9",
     "@neondatabase/serverless": "^1.1.0",
-    "@serwist/next": "^9.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "drizzle-orm": "^0.44.5",
+    "drizzle-orm": "^0.45.2",
     "idb": "^8.0.3",
     "lucide-react": "^0.544.0",
-    "maplibre-gl": "^5.7.1",
-    "next": "16.2.2",
+    "maplibre-gl": "^6.10.0",
+    "next": "^16.3.5",
     "ngeohash": "^0.6.3",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "serwist": "^9.2.3",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
@@ -42,7 +40,7 @@
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.2",
+    "eslint-config-next": "^16.3.5",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
     "typescript": "^5"

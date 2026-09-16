@@ -21,7 +21,6 @@ yarn-error.log*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
-public/sw.js
 public/swe-worker*.js
 src/data/sql-batches
 .tmp-sql

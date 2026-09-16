@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BottomNav } from "./bottom-nav";
 import { InstallHint } from "./install-hint";
+import { ServiceWorkerRegistration } from "./service-worker-registration";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -58,6 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </p>
       </footer>
       <InstallHint />
+      <ServiceWorkerRegistration />
       <BottomNav />
     </div>
   );

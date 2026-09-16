@@ -25,7 +25,7 @@ Optional: `npm run sample` loads the bundled San Jose sample into Neon. `npm run
 ## Scripts
 
 - `npm run dev` — Turbopack
-- `npm run build` — webpack production build (required for the Serwist service worker)
+- `npm run build` — webpack production build
 - `npm run db:migrate` — apply checked-in Drizzle migrations
 - `npm run ingest` — pull public feeds into Neon and rebuild the city index
 - `npm run discover` — probe TSML hosts (including UK intergroups) and add working public feeds
