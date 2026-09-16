@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ilike, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { cities } from "@/lib/schema";
+import { collapseCitySuggestions } from "@/lib/location";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
           .orderBy(sql`${cities.meetingCount} desc`)
           .limit(40);
     return NextResponse.json(
-      { cities: rows },
+      { cities: collapseCitySuggestions(rows) },
       {
         headers: {
           "Cache-Control": "public, s-maxage=900, stale-while-revalidate=900",

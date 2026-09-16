@@ -66,6 +66,7 @@ export function meetingEndMinutes(meeting: Meeting) {
 export type RankedMeeting = Meeting & {
   distanceKm: number | null;
   minutesUntilStart: number | null;
+  daysUntil: number | null;
   inProgress: boolean;
   group: MeetingGroupKey;
   nextDay: number | null;
@@ -167,6 +168,7 @@ export function filterAndGroup(
 
     const meetingDay = meeting.day;
     let minutesUntilStart: number | null = null;
+    let daysUntil: number | null = null;
     let inProgress = false;
     let group: MeetingGroupKey = "other";
     const end = meetingEndMinutes(meeting);
@@ -178,17 +180,18 @@ export function filterAndGroup(
 
       let deltaDays = (meetingDay - currentDay + 7) % 7;
       let deltaMins = start - currentMins + deltaDays * 24 * 60;
-      if (deltaMins < -60) {
-        deltaMins += 7 * 24 * 60;
-        deltaDays = (deltaDays + 7) % 7;
-      }
-
-      minutesUntilStart = deltaMins;
       if (end != null) {
         let duration = end - start;
         if (duration <= 0) duration += 24 * 60;
         inProgress = deltaMins <= 0 && deltaMins > -duration;
       }
+      if (!inProgress && deltaMins < 0) {
+        deltaMins += 7 * 24 * 60;
+        deltaDays += 7;
+      }
+
+      minutesUntilStart = deltaMins;
+      daysUntil = deltaDays;
 
       const selectedDay = today;
       const isSelectedDay =
@@ -203,8 +206,11 @@ export function filterAndGroup(
       if (inProgress) group = "happening";
       else if (deltaMins >= 0 && deltaMins <= 120 && (selectedDay === "any" || isSelectedDay))
         group = "soon";
-      else if (isSelectedDay) group = "later";
+      else if (deltaDays === 0 && (selectedDay === "any" || isSelectedDay))
+        group = "later";
       else if (filters.week) group = "week";
+      else if (selectedDay !== "any" && isSelectedDay && filters.day !== "today")
+        group = "later";
       else continue;
     } else if (filters.week) {
       group = "week";
@@ -216,6 +222,7 @@ export function filterAndGroup(
       ...meeting,
       distanceKm,
       minutesUntilStart,
+      daysUntil,
       inProgress,
       group,
       nextDay: meetingDay,
@@ -252,7 +259,11 @@ export function formatDistance(km: number | null) {
   return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 }
 
-export function formatUntil(minutes: number | null, inProgress: boolean) {
+export function formatUntil(
+  minutes: number | null,
+  inProgress: boolean,
+  daysUntil?: number | null,
+) {
   if (inProgress) return "Happening now";
   if (minutes == null) return null;
   if (minutes < 1) return "Starting now";
@@ -260,6 +271,8 @@ export function formatUntil(minutes: number | null, inProgress: boolean) {
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
   if (hours < 24) return mins ? `in ${hours}h ${mins}m` : `in ${hours}h`;
+  if (daysUntil === 1) return "tomorrow";
+  if (daysUntil != null && daysUntil > 1) return `in ${daysUntil} days`;
   const days = Math.round(hours / 24);
   return days === 1 ? "tomorrow" : `in ${days} days`;
 }

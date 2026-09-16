@@ -18,6 +18,7 @@ import { readSlice, writeSlice, savePlace } from "@/lib/idb";
 import {
   filterAndGroup,
   type RankedMeeting,
+  weekdayLabel,
 } from "@/lib/search";
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
@@ -299,6 +300,10 @@ export function Finder({
     activeFilterCount > 0 || filters.query.trim().length > 0;
   const canSearchMeetings =
     mode === "online" || Boolean(geohash) || Boolean(initialMeetings);
+  const laterTitle =
+    typeof filters.day === "number"
+      ? `${weekdayLabel(filters.day).toLowerCase()} meetings`
+      : "later today";
 
   return (
     <div className="space-y-5">
@@ -745,9 +750,9 @@ export function Finder({
         <div className="space-y-8">
           <Group title="happening now" items={groups.happening} />
           <Group title="starting within 2 hours" items={groups.soon} />
-          <Group title="later today" items={groups.later} />
+          <Group title={laterTitle} items={groups.later} />
           {filters.week || filters.day === "any" ? (
-            <Group title="rest of the week" items={groups.week} showDay />
+            <WeekGroups items={groups.week} />
           ) : null}
         </div>
       )}
@@ -812,6 +817,41 @@ function Group({
         ))}
       </ul>
     </section>
+  );
+}
+
+function WeekGroups({ items }: { items: RankedMeeting[] }) {
+  const byDay = new globalThis.Map<number | null, RankedMeeting[]>();
+  for (const meeting of items) {
+    const key = meeting.daysUntil;
+    const group = byDay.get(key);
+    if (group) group.push(meeting);
+    else byDay.set(key, [meeting]);
+  }
+
+  return (
+    <>
+      {[...byDay.entries()]
+        .sort(([a], [b]) => (a ?? 99) - (b ?? 99))
+        .map(([daysUntil, meetings]) => {
+          const day = meetings[0]?.nextDay;
+          const title =
+            daysUntil === 1
+              ? "tomorrow"
+              : daysUntil === 7 && day != null
+                ? `next ${weekdayLabel(day).toLowerCase()}`
+                : day != null
+                  ? weekdayLabel(day).toLowerCase()
+                  : "upcoming";
+          return (
+            <Group
+              key={daysUntil ?? "unscheduled"}
+              title={title}
+              items={meetings}
+            />
+          );
+        })}
+    </>
   );
 }
 

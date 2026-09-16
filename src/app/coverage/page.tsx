@@ -77,6 +77,7 @@ export default function CoveragePage() {
       feedbackEmails: [],
       distanceKm: null,
       minutesUntilStart: null,
+      daysUntil: null,
       inProgress: false,
       group: "other",
       nextDay: null,

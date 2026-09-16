@@ -1,4 +1,6 @@
 import { slugify } from "./utils";
+import { haversineKm } from "./geo";
+import type { City } from "./types";
 
 const COUNTRY_ALIASES: Record<string, string> = {
   "UNITED STATES": "US",
@@ -80,4 +82,18 @@ export function cityKey(input: {
   const country = slugify(input.country ?? "") || "xx";
   const geoScope = input.country ? "" : `-${input.geohash4?.slice(0, 3) || "geo"}`;
   return `${city}-${state}-${country}${geoScope}`;
+}
+
+export function collapseCitySuggestions(rows: City[]) {
+  const collapsed: City[] = [];
+  for (const city of rows) {
+    const duplicate = collapsed.some(
+      (candidate) =>
+        slugify(candidate.label) === slugify(city.label) &&
+        normalizeCountry(candidate.country) === normalizeCountry(city.country) &&
+        haversineKm(candidate.lat, candidate.lng, city.lat, city.lng) < 40,
+    );
+    if (!duplicate) collapsed.push(city);
+  }
+  return collapsed;
 }

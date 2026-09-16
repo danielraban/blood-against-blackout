@@ -54,3 +54,27 @@ test("meeting search ignores accents and extra whitespace", () => {
 test("meeting search matches words across fields and type codes", () => {
   assert.equal(search("Oxford ONL"), 1);
 });
+
+test("a meeting that already ended today is not shown as later today", () => {
+  const now = new Date(2026, 8, 16, 20, 0);
+  const result = filterAndGroup(
+    [{ ...meeting, day: now.getDay(), time: "07:00", endTime: "08:00" }],
+    DEFAULT_FILTERS,
+    null,
+    now,
+  );
+  assert.equal(result.count, 0);
+  assert.equal(result.groups.later.length, 0);
+});
+
+test("week results expose calendar day offsets for day-based headings", () => {
+  const now = new Date(2026, 8, 16, 20, 0);
+  const tomorrow = (now.getDay() + 1) % 7;
+  const result = filterAndGroup(
+    [{ ...meeting, day: tomorrow, time: "19:00" }],
+    { ...DEFAULT_FILTERS, day: "any", week: true },
+    null,
+    now,
+  );
+  assert.equal(result.groups.week[0]?.daysUntil, 1);
+});

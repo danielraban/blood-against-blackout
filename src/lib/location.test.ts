@@ -3,9 +3,11 @@ import test from "node:test";
 import {
   applyRegionHint,
   cityKey,
+  collapseCitySuggestions,
   isUsableCityLabel,
   normalizeCountry,
 } from "./location";
+import type { City } from "./types";
 
 test("normalizes common country variants", () => {
   assert.equal(normalizeCountry("USA"), "US");
@@ -45,4 +47,54 @@ test("rejects labels that are not real cities", () => {
   assert.equal(isUsableCityLabel("Regional"), false);
   assert.equal(isUsableCityLabel("Online"), false);
   assert.equal(isUsableCityLabel("London"), true);
+});
+
+test("collapses nearby jurisdiction variants of the same city", () => {
+  const london: City = {
+    slug: "london-xx-gb",
+    label: "London",
+    state: null,
+    country: "GB",
+    lat: 51.5072,
+    lng: -0.1276,
+    geohash4: "gcpv",
+    meetingCount: 638,
+  };
+  const rows = collapseCitySuggestions([
+    london,
+    {
+      ...london,
+      slug: "london-lon-gb",
+      state: "LON",
+      lat: 51.51,
+      meetingCount: 319,
+    },
+  ]);
+  assert.deepEqual(rows, [london]);
+});
+
+test("keeps same-named cities that are geographically distinct", () => {
+  const rows = collapseCitySuggestions([
+    {
+      slug: "springfield-il-us",
+      label: "Springfield",
+      state: "IL",
+      country: "US",
+      lat: 39.7817,
+      lng: -89.6501,
+      geohash4: "dp04",
+      meetingCount: 20,
+    },
+    {
+      slug: "springfield-ma-us",
+      label: "Springfield",
+      state: "MA",
+      country: "US",
+      lat: 42.1015,
+      lng: -72.5898,
+      geohash4: "drkz",
+      meetingCount: 10,
+    },
+  ]);
+  assert.equal(rows.length, 2);
 });

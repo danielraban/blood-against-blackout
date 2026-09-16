@@ -17,7 +17,11 @@ export function MeetingCard({
 }) {
   const href = `/meetings/${meeting.feedId}/${meeting.slug}`;
   const distance = formatDistance(meeting.distanceKm);
-  const until = formatUntil(meeting.minutesUntilStart, meeting.inProgress);
+  const until = formatUntil(
+    meeting.minutesUntilStart,
+    meeting.inProgress,
+    meeting.daysUntil,
+  );
   return (
     <Link
       href={href}
