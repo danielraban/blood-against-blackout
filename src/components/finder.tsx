@@ -269,7 +269,7 @@ export function Finder({
 
   const emptyBecauseCoverage =
     Boolean(geohash) && meetings.length === 0 && mode === "nearby";
-  const emptyBecauseFilters = meetings.length > 0 && count === 0;
+  const emptyBecauseNoMatches = meetings.length > 0 && count === 0;
   const defaultFilters: SearchFilters = {
     ...DEFAULT_FILTERS,
     attendance: mode === "online" ? "online" : "either",
@@ -284,6 +284,8 @@ export function Finder({
     filters.types.length > 0,
     filters.radiusKm !== defaultFilters.radiusKm,
   ].filter(Boolean).length;
+  const hasExplicitFilters =
+    activeFilterCount > 0 || filters.query.trim().length > 0;
 
   return (
     <div className="space-y-5">
@@ -647,11 +649,52 @@ export function Finder({
 
       {emptyBecauseCoverage ? (
         <EmptyCoverage city={selectedCity?.label} />
-      ) : emptyBecauseFilters ? (
-        <p className="rounded-2xl border border-border p-4">
-          These filters hid every listing. Loosen day, type, fellowship, or distance — there
-          are still {meetings.length} meetings in this slice.
-        </p>
+      ) : emptyBecauseNoMatches ? (
+        <div className="comic-frame space-y-3 bg-card p-4">
+          <p className="font-semibold text-warn">
+            {hasExplicitFilters
+              ? "No meetings match your current search and filters."
+              : mode === "nearby"
+                ? `No meetings match today within ${filters.radiusKm} km.`
+                : "No online meetings match today."}
+          </p>
+          <p className="text-sm text-muted">
+            There are still {meetings.length} listings in this area. Show more
+            days, widen the distance, or clear your choices.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {hasExplicitFilters ? (
+              <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
+                Clear filters
+              </Button>
+            ) : null}
+            {!filters.week || filters.day !== "any" ? (
+              <Button
+                type="button"
+                onClick={() =>
+                  setFilters((current) => ({
+                    ...current,
+                    day: "any",
+                    week: true,
+                  }))
+                }
+              >
+                Show rest of week
+              </Button>
+            ) : null}
+            {mode === "nearby" && filters.radiusKm < 50 ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setFilters((current) => ({ ...current, radiusKm: 50 }))
+                }
+              >
+                Expand to 50 km
+              </Button>
+            ) : null}
+          </div>
+        </div>
       ) : (
         <div className="space-y-8">
           <Group title="Happening now" items={groups.happening} />
