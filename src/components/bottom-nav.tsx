@@ -6,10 +6,10 @@ import { BookOpen, Globe, Heart, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/", label: "Nearby", icon: MapPin },
-  { href: "/online", label: "Online", icon: Globe },
-  { href: "/saved", label: "Saved", icon: Heart },
-  { href: "/resources", label: "Resources", icon: BookOpen },
+  { href: "/", label: "nearby", icon: MapPin },
+  { href: "/online", label: "online", icon: Globe },
+  { href: "/saved", label: "saved", icon: Heart },
+  { href: "/resources", label: "resources", icon: BookOpen },
 ];
 
 export function BottomNav() {
@@ -27,8 +27,9 @@ export function BottomNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1 text-sm font-semibold uppercase tracking-wide",
+                  "flex min-h-16 flex-col items-center justify-center gap-1 text-sm font-semibold lowercase tracking-wide",
                   active ? "bg-hot text-black" : "text-warn",
                 )}
               >

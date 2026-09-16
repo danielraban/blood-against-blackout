@@ -26,15 +26,15 @@ import { cn } from "@/lib/utils";
 import { Map, SlidersHorizontal, X } from "lucide-react";
 
 const DAYS: Array<{ value: SearchFilters["day"]; label: string }> = [
-  { value: "today", label: "Today" },
-  { value: "any", label: "Any day" },
-  { value: 0, label: "Sun" },
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
+  { value: "today", label: "today" },
+  { value: "any", label: "any day" },
+  { value: 0, label: "sun" },
+  { value: 1, label: "mon" },
+  { value: 2, label: "tue" },
+  { value: 3, label: "wed" },
+  { value: 4, label: "thu" },
+  { value: 5, label: "fri" },
+  { value: 6, label: "sat" },
 ];
 
 export function Finder({
@@ -286,6 +286,8 @@ export function Finder({
   ].filter(Boolean).length;
   const hasExplicitFilters =
     activeFilterCount > 0 || filters.query.trim().length > 0;
+  const canSearchMeetings =
+    mode === "online" || Boolean(geohash) || Boolean(initialMeetings);
 
   return (
     <div className="space-y-5">
@@ -297,14 +299,21 @@ export function Finder({
           <ComicStrip />
           <div className="flex flex-col gap-2 sm:flex-row">
             <div
-              className="relative min-w-0 flex-1"
+              className="relative min-w-0 flex-1 space-y-2"
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget)) {
                   setCityOpen(false);
                 }
               }}
             >
+              <label
+                className="block text-sm font-semibold lowercase"
+                htmlFor="location-search"
+              >
+                location
+              </label>
               <Input
+                id="location-search"
                 value={cityQuery}
                 onChange={(event) => {
                   const value = event.target.value;
@@ -324,8 +333,9 @@ export function Finder({
                 onKeyDown={(event) => {
                   if (event.key === "Escape") setCityOpen(false);
                 }}
-                placeholder="City or town"
+                placeholder="city or town"
                 aria-label="Search city"
+                aria-describedby="location-status"
                 role="combobox"
                 aria-autocomplete="list"
                 aria-expanded={cityOpen}
@@ -376,32 +386,40 @@ export function Finder({
                 </div>
               ) : null}
             </div>
-            <Button type="button" variant="outline" onClick={useLocation}>
-              Use my location
+            <Button
+              type="button"
+              variant="outline"
+              className="sm:self-end"
+              onClick={useLocation}
+            >
+              use my location
             </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-            <span>{selectedCity ? selectedCity.label : geohash ? `Area ${geohash}` : "No area yet"}</span>
-            {origin ? (
-              <>
+          <p id="location-status" className="text-sm text-muted">
+            {selectedCity
+              ? `${selectedCity.label} · ${status}`
+              : geohash
+                ? `current area · ${status}`
+                : status}
+          </p>
+          {origin ? (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
                 <button className="underline" onClick={() => void savePlace({ kind: "home", label: selectedCity?.label ?? "Home", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                  Save as Home
+                  save as home
                 </button>
                 <button className="underline" onClick={() => void savePlace({ kind: "work", label: selectedCity?.label ?? "Work", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                  Work
+                  save as work
                 </button>
                 <button className="underline" onClick={() => void savePlace({ kind: "travel", label: selectedCity?.label ?? "Travel", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                  Travel
+                  save as travel
                 </button>
-              </>
-            ) : null}
-          </div>
-          <p>{status}</p>
+            </div>
+          ) : null}
           {offlineNote ? <p className="text-sm text-muted">{offlineNote}</p> : null}
         </section>
       ) : (
         <section>
-          <h1 className="comic-wordmark font-display text-5xl uppercase tracking-tight">Online meetings</h1>
+          <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">online meetings</h1>
           <p className="mt-2 text-muted">
             Times are shown in your timezone. Join links stay on this device.
           </p>
@@ -411,35 +429,43 @@ export function Finder({
         </section>
       )}
 
-      <div className="sticky top-0 z-20 space-y-2 border-y-2 border-black bg-background/95 py-3 backdrop-blur-sm">
-        <Input
-          value={filters.query}
-          onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
-          placeholder="Search these meetings"
-          aria-label="Search meetings"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="mr-auto text-sm text-muted">
-            {count} match{count === 1 ? "" : "es"}
-          </p>
-          {mode === "nearby" ? (
-            <Button type="button" variant="outline" onClick={() => setShowMap((v) => !v)}>
-              <Map aria-hidden="true" size={18} />
-              {showMap ? "Hide map" : "Map"}
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={activeFilterCount ? "default" : "outline"}
-            aria-expanded={showFilters}
-            aria-controls="meeting-filters"
-            onClick={() => setShowFilters(true)}
+      {canSearchMeetings ? (
+        <div className="sticky top-0 z-20 space-y-2 border-y-2 border-black bg-background/95 py-3 backdrop-blur-sm">
+          <label
+            className="block text-sm font-semibold lowercase"
+            htmlFor="meeting-search"
           >
-            <SlidersHorizontal aria-hidden="true" size={18} />
-            Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
-          </Button>
+            meeting search
+          </label>
+          <Input
+            id="meeting-search"
+            value={filters.query}
+            onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+            placeholder="name, location, or meeting type"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="mr-auto text-sm text-muted">
+              {count} match{count === 1 ? "" : "es"}
+            </p>
+            {mode === "nearby" ? (
+              <Button type="button" variant="outline" onClick={() => setShowMap((v) => !v)}>
+                <Map aria-hidden="true" size={18} />
+                {showMap ? "hide map" : "map"}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant={activeFilterCount ? "default" : "outline"}
+              aria-expanded={showFilters}
+              aria-controls="meeting-filters"
+              onClick={() => setShowFilters(true)}
+            >
+              <SlidersHorizontal aria-hidden="true" size={18} />
+              filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <button
         type="button"
@@ -468,9 +494,9 @@ export function Finder({
           <div>
             <h2
               id="meeting-filters-title"
-              className="font-display text-2xl uppercase tracking-tight"
+              className="font-display text-2xl lowercase tracking-tight"
             >
-              Filter meetings
+              filter meetings
             </h2>
             <p className="text-sm font-semibold">
               {count} match{count === 1 ? "" : "es"}
@@ -486,7 +512,7 @@ export function Finder({
           </button>
         </div>
         <div className="space-y-5 p-4">
-        <FilterGroup label="Fellowship">
+        <FilterGroup label="fellowship">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(["all", "aa", "na", "ca"] as const).map((value) => (
               <button
@@ -494,7 +520,7 @@ export function Finder({
                 type="button"
                 aria-pressed={filters.fellowship === value}
                 className={cn(
-                  "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold uppercase tracking-wide shadow-[3px_3px_0_0_#000]",
+                  "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold lowercase tracking-wide shadow-[3px_3px_0_0_#000]",
                   filters.fellowship === value
                     ? value === "na"
                       ? "bg-hot text-black"
@@ -507,13 +533,13 @@ export function Finder({
                 )}
                 onClick={() => setFilters((f) => ({ ...f, fellowship: value as FellowshipFilter }))}
               >
-                {value === "all" ? "All" : FELLOWSHIP_LABEL[value]}
+                {value === "all" ? "all" : FELLOWSHIP_LABEL[value]}
               </button>
             ))}
           </div>
         </FilterGroup>
 
-        <FilterGroup label="Attendance">
+        <FilterGroup label="attendance">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(["in-person", "online", "either"] as const).map((value) => (
               <Button
@@ -522,19 +548,19 @@ export function Finder({
                 variant={filters.attendance === value ? "default" : "outline"}
                 onClick={() => setFilters((f) => ({ ...f, attendance: value }))}
               >
-                {value === "in-person" ? "In person" : value === "online" ? "Online" : "Either"}
+                {value === "in-person" ? "in person" : value === "online" ? "online" : "either"}
               </Button>
             ))}
           </div>
         </FilterGroup>
 
-        <FilterGroup label="Day">
+        <FilterGroup label="day">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {DAYS.map((day) => (
               <button
                 key={String(day.value)}
                 className={cn(
-                  "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold uppercase shadow-[3px_3px_0_0_#000]",
+                  "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold lowercase shadow-[3px_3px_0_0_#000]",
                   filters.day === day.value
                     ? "bg-warn text-black"
                     : "bg-card text-foreground",
@@ -552,17 +578,17 @@ export function Finder({
             ))}
             <button
               className={cn(
-                "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold uppercase shadow-[3px_3px_0_0_#000]",
+                "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold lowercase shadow-[3px_3px_0_0_#000]",
                 filters.week ? "bg-hot text-black" : "bg-card text-foreground",
               )}
               onClick={() => setFilters((f) => ({ ...f, week: !f.week, day: f.week ? "today" : "any" }))}
             >
-              Rest of week
+              rest of week
             </button>
           </div>
         </FilterGroup>
 
-        <FilterGroup label="Time">
+        <FilterGroup label="time">
           <div className="flex flex-wrap gap-2">
             {(["any", "morning", "afternoon", "evening"] as const).map((slot) => (
               <Chip
@@ -576,7 +602,7 @@ export function Finder({
           </div>
         </FilterGroup>
 
-        <FilterGroup label="Access">
+        <FilterGroup label="access">
           <div className="flex flex-wrap gap-2">
             {(["O", "C"] as const).map((value) => (
               <Chip
@@ -589,13 +615,13 @@ export function Finder({
                   }))
                 }
               >
-                {value === "O" ? "Open" : "Closed"}
+                {value === "O" ? "open" : "closed"}
               </Chip>
             ))}
           </div>
         </FilterGroup>
 
-        <FilterGroup label="Meeting type">
+        <FilterGroup label="meeting type">
           <div className="flex flex-wrap gap-2">
             {FILTER_TYPE_CODES.map((code) => (
               <Chip
@@ -617,7 +643,7 @@ export function Finder({
         </FilterGroup>
 
         {mode === "nearby" ? (
-          <FilterGroup label="Distance">
+          <FilterGroup label="distance">
             <label className="flex max-w-sm items-center gap-3 text-sm">
               <span className="shrink-0">Within {filters.radiusKm} km</span>
               <input
@@ -636,10 +662,10 @@ export function Finder({
 
         <div className="flex flex-wrap justify-end gap-2 border-t-2 border-black pt-4">
           <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
-            Reset filters
+            reset filters
           </Button>
           <Button type="button" onClick={() => setShowFilters(false)}>
-            Show {count} match{count === 1 ? "" : "es"}
+            show {count} match{count === 1 ? "" : "es"}
           </Button>
         </div>
         </div>
@@ -665,7 +691,7 @@ export function Finder({
           <div className="flex flex-wrap gap-2">
             {hasExplicitFilters ? (
               <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
-                Clear filters
+                clear filters
               </Button>
             ) : null}
             {!filters.week || filters.day !== "any" ? (
@@ -679,7 +705,7 @@ export function Finder({
                   }))
                 }
               >
-                Show rest of week
+                show rest of week
               </Button>
             ) : null}
             {mode === "nearby" && filters.radiusKm < 50 ? (
@@ -690,18 +716,18 @@ export function Finder({
                   setFilters((current) => ({ ...current, radiusKm: 50 }))
                 }
               >
-                Expand to 50 km
+                expand to 50 km
               </Button>
             ) : null}
           </div>
         </div>
       ) : (
         <div className="space-y-8">
-          <Group title="Happening now" items={groups.happening} />
-          <Group title="Starting within 2 hours" items={groups.soon} />
-          <Group title="Later today" items={groups.later} />
+          <Group title="happening now" items={groups.happening} />
+          <Group title="starting within 2 hours" items={groups.soon} />
+          <Group title="later today" items={groups.later} />
           {filters.week || filters.day === "any" ? (
-            <Group title="Rest of the week" items={groups.week} showDay />
+            <Group title="rest of the week" items={groups.week} showDay />
           ) : null}
         </div>
       )}
@@ -710,9 +736,9 @@ export function Finder({
 }
 
 const chipClass =
-  "min-h-12 border-2 border-black bg-card px-3 text-sm font-semibold uppercase capitalize text-foreground shadow-[3px_3px_0_0_#000]";
+  "min-h-12 border-2 border-black bg-card px-3 text-sm font-semibold lowercase text-foreground shadow-[3px_3px_0_0_#000]";
 const chipActiveClass =
-  "min-h-12 border-2 border-black bg-warn px-3 text-sm font-semibold uppercase capitalize text-black shadow-[3px_3px_0_0_#000]";
+  "min-h-12 border-2 border-black bg-warn px-3 text-sm font-semibold lowercase text-black shadow-[3px_3px_0_0_#000]";
 
 function Chip({
   active,
@@ -739,7 +765,7 @@ function FilterGroup({
 }) {
   return (
     <div className="space-y-2">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-muted">{label}</h2>
+      <h2 className="text-xs font-bold lowercase tracking-widest text-muted">{label}</h2>
       {children}
     </div>
   );
@@ -757,7 +783,7 @@ function Group({
   if (!items.length) return null;
   return (
     <section className="space-y-3">
-      <h2 className="font-display text-2xl uppercase tracking-tight text-warn">{title}</h2>
+      <h2 className="font-display text-2xl lowercase tracking-tight text-warn">{title}</h2>
       <ul className="space-y-3">
         {items.map((meeting) => (
           <li key={`${meeting.feedId}:${meeting.slug}`}>
@@ -799,10 +825,10 @@ function EmptyCoverage({ city }: { city?: string }) {
       </p>
       <div className="flex gap-2">
         <a href="/online">
-          <Button>See online meetings</Button>
+          <Button>see online meetings</Button>
         </a>
         <a href="/coverage">
-          <Button variant="outline">Coverage map</Button>
+          <Button variant="outline">coverage map</Button>
         </a>
       </div>
     </div>

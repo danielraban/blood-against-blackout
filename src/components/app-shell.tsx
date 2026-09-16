@@ -46,15 +46,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </p>
         <p className="mt-2">
           <Link className="text-cool underline" href="/coverage">
-            Coverage
+            coverage
           </Link>
           {" · "}
           <Link className="text-cool underline" href="/contact">
-            Local contacts
+            local contacts
           </Link>
           {" · "}
           <Link className="text-cool underline" href="/admin/feeds">
-            Feeds
+            feeds
           </Link>
         </p>
       </footer>

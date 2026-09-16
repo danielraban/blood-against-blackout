@@ -21,7 +21,7 @@ export function MeetingCard({
   return (
     <Link
       href={href}
-      className="block border-4 border-black bg-card p-4 shadow-[6px_6px_0_0_#ff2ad4] hover:shadow-[8px_8px_0_0_#ffe600]"
+      className="block border-4 border-black bg-card p-4 shadow-[6px_6px_0_0_#ff2ad4] hover:shadow-[8px_8px_0_0_#ffe600] focus-visible:shadow-[8px_8px_0_0_#ffe600]"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -41,7 +41,7 @@ export function MeetingCard({
       <div className="mt-3 flex flex-wrap gap-2">
         <Badge
           className={cn(
-            "border-black font-semibold uppercase",
+            "border-black font-semibold lowercase",
             meeting.fellowship === "na"
               ? "bg-hot text-black"
               : meeting.fellowship === "ca"
@@ -52,8 +52,8 @@ export function MeetingCard({
           {FELLOWSHIP_LABEL[meeting.fellowship ?? "aa"]}
         </Badge>
         <Badge>{meeting.attendance}</Badge>
-        {meeting.inProgress ? <Badge className="border-black bg-warn text-black">Now</Badge> : null}
-        {isStale(meeting.updatedAt) ? <Badge>Listing may be old</Badge> : null}
+        {meeting.inProgress ? <Badge className="border-black bg-warn text-black">now</Badge> : null}
+        {isStale(meeting.updatedAt) ? <Badge>listing may be old</Badge> : null}
         {meeting.types.slice(0, 4).map((type) => (
           <Badge key={type}>{labelForType(type)}</Badge>
         ))}

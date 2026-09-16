@@ -45,6 +45,11 @@ body {
   border-color: var(--border);
 }
 
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 3px solid var(--cool);
+  outline-offset: 3px;
+}
+
 .font-display {
   font-family: var(--font-display), Impact, "Arial Black", sans-serif;
 }

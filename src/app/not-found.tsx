@@ -7,8 +7,8 @@ export default function NotFoundPage() {
         no door here
       </h1>
       <p>This page is gone, but the meeting finder is still open.</p>
-      <Link className="inline-flex min-h-12 items-center border-2 border-black bg-warn px-4 font-semibold text-black" href="/">
-        Find a meeting
+      <Link className="inline-flex min-h-12 items-center border-2 border-black bg-warn px-4 font-semibold lowercase text-black" href="/">
+        find a meeting
       </Link>
     </section>
   );

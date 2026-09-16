@@ -6,7 +6,7 @@ export default function ResourcesPage() {
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "danielraban@proton.me";
   return (
     <article className="space-y-6">
-      <h1 className="comic-wordmark font-display text-5xl uppercase tracking-tight">Resources</h1>
+      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">resources</h1>
       <ComicStrip compact />
       <p className="text-muted">
         Original guidance for finding a meeting. This is not A.A., N.A., or C.A.
@@ -22,7 +22,7 @@ export default function ResourcesPage() {
         </p>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-medium">What to expect</h2>
+        <h2 className="text-xl font-medium lowercase">what to expect</h2>
         <p>
           Most meetings last about an hour. Arrive a few minutes early if you
           can. You do not need to speak. Open meetings usually welcome anyone
@@ -37,7 +37,7 @@ export default function ResourcesPage() {
         </p>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-medium">Official sites</h2>
+        <h2 className="text-xl font-medium lowercase">official sites</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
             <a className="underline" href="https://www.aa.org">
@@ -77,14 +77,14 @@ export default function ResourcesPage() {
           </li>
           <li>
             <Link className="underline" href="/contact">
-              Local contacts
+              local contacts
             </Link>{" "}
             from the offices that publish these feeds
           </li>
         </ul>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-medium">Privacy</h2>
+        <h2 className="text-xl font-medium lowercase">privacy</h2>
         <p>
           blood against blackout does not create accounts. Your precise location stays on
           this device. Favorites and Home/Work/Travel places are stored in this
@@ -99,7 +99,7 @@ export default function ResourcesPage() {
         </p>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-medium">Listings, corrections, and takedowns</h2>
+        <h2 className="text-xl font-medium lowercase">listings, corrections, and takedowns</h2>
         <p>
           Meeting details come from public feeds maintained by local service
           entities. The source office remains responsible for its listing.

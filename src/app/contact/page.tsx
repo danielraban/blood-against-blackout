@@ -59,7 +59,7 @@ export default function ContactPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="comic-wordmark font-display text-5xl uppercase tracking-tight">Local contacts</h1>
+      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">local contacts</h1>
       <p className="text-muted">{status}</p>
       <ul className="space-y-3">
         {entities.map((entity) => (

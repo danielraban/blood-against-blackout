@@ -83,7 +83,7 @@ export default function CoveragePage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="comic-wordmark font-display text-5xl uppercase tracking-tight">Coverage</h1>
+      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">coverage</h1>
       <p className="text-muted">
         blood against blackout only lists meetings from public Meeting Guide / TSML / BMLT
         JSON feeds for A.A., N.A., and C.A. If a city is missing, the local office
@@ -94,7 +94,7 @@ export default function CoveragePage() {
       {error ? <p>{error}</p> : null}
       {points.length ? <MeetingMap meetings={points} origin={null} /> : null}
       <section>
-        <h2 className="text-xl font-medium">Cities with listings</h2>
+        <h2 className="text-xl font-medium lowercase">cities with listings</h2>
         <ul className="mt-3 divide-y divide-black border-4 border-black bg-card shadow-[6px_6px_0_0_#ff2ad4]">
           {(data?.cities ?? []).slice(0, 80).map((city) => (
             <li key={city.slug}>
@@ -113,7 +113,7 @@ export default function CoveragePage() {
         </ul>
       </section>
       <section>
-        <h2 className="text-xl font-medium">Feeds</h2>
+        <h2 className="text-xl font-medium lowercase">feeds</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {(data?.feeds ?? []).map((feed) => (
             <li key={feed.id} className="border-4 border-black bg-card p-3 shadow-[4px_4px_0_0_#3d8bff]">

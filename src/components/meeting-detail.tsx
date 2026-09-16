@@ -30,10 +30,10 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
     <article className="space-y-5">
       <p className="text-sm text-muted">
         <Link href="/" className="underline">
-          Nearby
+          nearby
         </Link>
       </p>
-      <h1 className="comic-wordmark font-display text-4xl uppercase tracking-tight">{meeting.name}</h1>
+      <h1 className="comic-wordmark font-display text-4xl tracking-tight">{meeting.name}</h1>
       <p className="text-lg text-muted">
         {meeting.day != null ? `${weekdayLabel(meeting.day)} · ` : ""}
         {formatTime(meeting.time)}
@@ -42,7 +42,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
       <div className="flex flex-wrap gap-2">
         <Badge
           className={cn(
-            "border-black font-semibold uppercase",
+            "border-black font-semibold lowercase",
             meeting.fellowship === "na"
               ? "bg-hot text-black"
               : meeting.fellowship === "ca"
@@ -53,7 +53,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
           {FELLOWSHIP_LABEL[meeting.fellowship ?? "aa"]}
         </Badge>
         <Badge>{meeting.attendance}</Badge>
-        {isStale(meeting.updatedAt) ? <Badge>Listing may be old</Badge> : null}
+        {isStale(meeting.updatedAt) ? <Badge>listing may be old</Badge> : null}
         {meeting.types.map((type) => (
           <Badge key={type}>{labelForType(type)}</Badge>
         ))}
@@ -69,7 +69,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {meeting.conferenceUrl ? (
-          <Button onClick={() => openJoin(meeting.conferenceUrl!)}>Join</Button>
+          <Button onClick={() => openJoin(meeting.conferenceUrl!)}>join</Button>
         ) : null}
         {meeting.lat != null && meeting.lng != null ? (
           <a
@@ -77,7 +77,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
             target="_blank"
             rel="noreferrer"
           >
-            <Button variant="outline">Directions</Button>
+            <Button variant="outline">directions</Button>
           </a>
         ) : null}
         <Button
@@ -93,13 +93,13 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
             })
           }
         >
-          Add to calendar
+          add to calendar
         </Button>
         <Button
           variant={saved ? "default" : "outline"}
           onClick={async () => setSaved(await toggleFavorite(meeting))}
         >
-          {saved ? "Saved" : "Save"}
+          {saved ? "saved" : "save"}
         </Button>
         <Button
           variant="outline"
@@ -112,11 +112,11 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
             }
           }}
         >
-          Share
+          share
         </Button>
         {report ? (
           <a href={report}>
-            <Button variant="outline">Report a problem</Button>
+            <Button variant="outline">report a problem</Button>
           </a>
         ) : null}
       </div>

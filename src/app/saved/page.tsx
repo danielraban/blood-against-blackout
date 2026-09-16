@@ -27,9 +27,9 @@ export default function SavedPage() {
 
   return (
     <div className="space-y-6">
-          <h1 className="comic-wordmark font-display text-5xl uppercase tracking-tight">Saved</h1>
+      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">saved</h1>
       <section className="space-y-3">
-        <h2 className="text-xl font-medium">Places</h2>
+        <h2 className="text-xl font-medium lowercase">places</h2>
         {places.length === 0 ? (
           <p className="text-muted">
             Save Home, Work, or Travel from Nearby so you are not stuck waiting
@@ -41,7 +41,7 @@ export default function SavedPage() {
               <li key={place.kind}>
                 <Link href={`/?gh=${place.geohash4}`}>
                   <Button variant="outline" className="w-full justify-between">
-                    <span className="capitalize">{place.kind}</span>
+                    <span>{place.kind}</span>
                     <span className="text-muted">{place.label}</span>
                   </Button>
                 </Link>
@@ -51,7 +51,7 @@ export default function SavedPage() {
         )}
       </section>
       <section className="space-y-3">
-        <h2 className="text-xl font-medium">Favorite meetings</h2>
+        <h2 className="text-xl font-medium lowercase">favorite meetings</h2>
         {favorites.length === 0 ? (
           <p className="text-muted">Favorites stay on this device only.</p>
         ) : (

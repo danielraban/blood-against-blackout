@@ -25,7 +25,7 @@ export default function ErrorPage({
       <p>
         We could not load this screen. Your saved meetings remain on this device.
       </p>
-      <Button onClick={reset}>Try again</Button>
+      <Button onClick={reset}>try again</Button>
     </section>
   );
 }

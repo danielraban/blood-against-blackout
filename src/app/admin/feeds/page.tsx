@@ -63,14 +63,14 @@ export default function AdminFeedsPage() {
   if (!authed) {
     return (
       <div className="space-y-3">
-        <h1 className="text-3xl font-semibold">Feeds</h1>
+        <h1 className="text-3xl font-semibold lowercase">feeds</h1>
         <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Admin password"
+          placeholder="admin password"
         />
-        <Button onClick={() => void login()}>Sign in</Button>
+        <Button onClick={() => void login()}>sign in</Button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </div>
     );
@@ -78,16 +78,16 @@ export default function AdminFeedsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-semibold">Feeds</h1>
+      <h1 className="text-3xl font-semibold lowercase">feeds</h1>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button onClick={() => void post({ action: "seed" })}>Seed catalog</Button>
-        <Button onClick={() => void post({ action: "ingest" })}>Run ingest</Button>
+        <Button onClick={() => void post({ action: "seed" })}>seed catalog</Button>
+        <Button onClick={() => void post({ action: "ingest" })}>run ingest</Button>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Office name"
+          placeholder="office name"
         />
         <Input
           value={url}
@@ -98,7 +98,7 @@ export default function AdminFeedsPage() {
           variant="outline"
           onClick={() => void post({ action: "add", url, name })}
         >
-          Add feed
+          add feed
         </Button>
       </div>
       {message ? (
@@ -126,7 +126,7 @@ export default function AdminFeedsPage() {
                 })
               }
             >
-              {feed.status === "disabled" ? "Enable" : "Disable"}
+              {feed.status === "disabled" ? "enable" : "disable"}
             </Button>
           </li>
         ))}
