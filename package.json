@@ -1,0 +1,50 @@
+{
+  "name": "blood-against-blackout",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "ingest": "tsx src/scripts/ingest.ts",
+    "sample": "node src/scripts/load-sample.mjs",
+    "discover": "node src/scripts/discover.mjs"
+  },
+  "dependencies": {
+    "@code4recovery/spec": "^1.1.9",
+    "@neondatabase/serverless": "^1.1.0",
+    "@serwist/next": "^9.2.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.44.5",
+    "idb": "^8.0.3",
+    "lucide-react": "^0.544.0",
+    "maplibre-gl": "^5.7.1",
+    "next": "16.2.2",
+    "ngeohash": "^0.6.3",
+    "radix-ui": "^1.4.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "serwist": "^9.2.3",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/ngeohash": "^0.6.8",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.4",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "tailwindcss": "^4",
+    "tsx": "^4.20.5",
+    "typescript": "^5"
+  }
+}
