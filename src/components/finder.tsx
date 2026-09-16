@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MeetingCard } from "@/components/meeting-card";
 import { MeetingMap } from "@/components/meeting-map";
@@ -23,7 +23,7 @@ import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
 import { ComicStrip } from "@/components/comic-strip";
 import { cn } from "@/lib/utils";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { Map, SlidersHorizontal, X } from "lucide-react";
 
 const DAYS: Array<{ value: SearchFilters["day"]; label: string }> = [
   { value: "today", label: "Today" },
@@ -54,6 +54,10 @@ export function Finder({
   });
   const [cityQuery, setCityQuery] = useState("");
   const [cities, setCities] = useState<City[]>([]);
+  const [citySearchState, setCitySearchState] = useState<
+    "idle" | "loading" | "done" | "error"
+  >("idle");
+  const [cityOpen, setCityOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const [geohash, setGeohash] = useState(params.get("gh"));
@@ -72,6 +76,7 @@ export function Finder({
   const [showMap, setShowMap] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [offlineNote, setOfflineNote] = useState<string | null>(null);
+  const filterPanelRef = useRef<HTMLElement>(null);
 
   const loadSlice = useCallback(async (hash: string, nextOrigin?: { lat: number; lng: number } | null) => {
     setGeohash(hash);
@@ -136,16 +141,71 @@ export function Finder({
 
   useEffect(() => {
     const q = cityQuery.trim();
+    if (q.length < 2) return;
+    const controller = new AbortController();
     const handle = window.setTimeout(async () => {
-      const url =
-        q.length >= 2 ? `/api/cities?q=${encodeURIComponent(q)}` : "/api/cities";
-      const response = await fetch(url);
-      if (!response.ok) return;
-      const data = (await response.json()) as { cities: City[] };
-      setCities(data.cities);
-    }, q.length >= 2 ? 200 : 0);
-    return () => window.clearTimeout(handle);
+      try {
+        const response = await fetch(`/api/cities?q=${encodeURIComponent(q)}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("City search failed");
+        const data = (await response.json()) as { cities: City[] };
+        setCities(data.cities.slice(0, 6));
+      } catch {
+        if (controller.signal.aborted) return;
+        setCities([]);
+        setCitySearchState("error");
+        return;
+      }
+      setCitySearchState("done");
+    }, 200);
+    return () => {
+      controller.abort();
+      window.clearTimeout(handle);
+    };
   }, [cityQuery]);
+
+  useEffect(() => {
+    if (!showFilters) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = "hidden";
+    const focusPanel = window.requestAnimationFrame(() => {
+      filterPanelRef.current
+        ?.querySelector<HTMLElement>("button, input, [href], [tabindex]:not([tabindex='-1'])")
+        ?.focus();
+    });
+    const handlePanelKeys = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowFilters(false);
+        return;
+      }
+      if (event.key !== "Tab" || !filterPanelRef.current) return;
+      const focusable = Array.from(
+        filterPanelRef.current.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex='-1'])",
+        ),
+      );
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handlePanelKeys);
+    return () => {
+      window.cancelAnimationFrame(focusPanel);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handlePanelKeys);
+      previousFocus?.focus();
+    };
+  }, [showFilters]);
 
   useEffect(() => {
     if (mode !== "online" || initialMeetings) return;
@@ -197,6 +257,8 @@ export function Finder({
     setSelectedCity(city);
     setCityQuery("");
     setCities([]);
+    setCitySearchState("idle");
+    setCityOpen(false);
     setOrigin({ lat: city.lat, lng: city.lng });
     const next = new URLSearchParams(params.toString());
     next.set("city", city.slug);
@@ -232,34 +294,90 @@ export function Finder({
           </h1>
           <ComicStrip />
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              value={cityQuery}
-              onChange={(e) => setCityQuery(e.target.value)}
-              placeholder="City or town"
-              aria-label="Search city"
-            />
+            <div
+              className="relative min-w-0 flex-1"
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                  setCityOpen(false);
+                }
+              }}
+            >
+              <Input
+                value={cityQuery}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCityQuery(value);
+                  if (value.trim().length >= 2) {
+                    setCitySearchState("loading");
+                    setCityOpen(true);
+                  } else {
+                    setCities([]);
+                    setCitySearchState("idle");
+                    setCityOpen(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (cityQuery.trim().length >= 2) setCityOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setCityOpen(false);
+                }}
+                placeholder="City or town"
+                aria-label="Search city"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={cityOpen}
+                aria-controls="city-suggestions"
+              />
+              {cityOpen ? (
+                <div
+                  id="city-suggestions"
+                  className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-40 max-h-72 overflow-y-auto border-4 border-black bg-card shadow-[6px_6px_0_0_#3d8bff]"
+                >
+                  {citySearchState === "loading" ? (
+                    <p className="px-4 py-3 text-sm text-muted">Searching cities…</p>
+                  ) : citySearchState === "error" ? (
+                    <p className="px-4 py-3 text-sm text-warn">
+                      City search is temporarily unavailable. Try again shortly.
+                    </p>
+                  ) : cities.length ? (
+                    <ul
+                      role="listbox"
+                      aria-label="City suggestions"
+                      className="divide-y divide-black"
+                    >
+                      {cities.map((city) => (
+                        <li key={city.slug}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected="false"
+                            className="flex min-h-12 w-full items-center justify-between gap-4 px-4 text-left hover:bg-warn hover:text-black focus-visible:bg-warn focus-visible:text-black"
+                            onClick={() => void pickCity(city)}
+                          >
+                            <span className="truncate">
+                              {city.label}
+                              {city.country ? `, ${city.country}` : ""}
+                            </span>
+                            <span className="shrink-0 text-sm opacity-70">
+                              {city.meetingCount}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="px-4 py-3 text-sm text-muted">
+                      No covered cities match that search.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </div>
             <Button type="button" variant="outline" onClick={useLocation}>
               Use my location
             </Button>
           </div>
-          {cities.length > 0 ? (
-            <ul className="divide-y divide-black overflow-hidden border-4 border-black bg-card shadow-[6px_6px_0_0_#3d8bff]">
-              {cities.slice(0, cityQuery.trim().length >= 2 ? 20 : 8).map((city) => (
-                <li key={city.slug}>
-                  <button
-                    className="flex min-h-12 w-full items-center justify-between px-4 text-left"
-                    onClick={() => void pickCity(city)}
-                  >
-                    <span>
-                      {city.label}
-                      {city.country ? `, ${city.country}` : ""}
-                    </span>
-                    <span className="text-sm text-muted">{city.meetingCount}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
             <span>{selectedCity ? selectedCity.label : geohash ? `Area ${geohash}` : "No area yet"}</span>
             {origin ? (
@@ -291,42 +409,81 @@ export function Finder({
         </section>
       )}
 
-      <Input
-        value={filters.query}
-        onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
-        placeholder="Filter by name, location, or notes"
-        aria-label="Filter meetings"
-      />
-
-      <div className="flex items-center gap-2 md:hidden">
-        <Button
-          type="button"
-          variant="outline"
-          className="flex-1 justify-between"
-          aria-expanded={showFilters}
-          aria-controls="meeting-filters"
-          onClick={() => setShowFilters((value) => !value)}
-        >
-          <span className="flex items-center gap-2">
+      <div className="sticky top-0 z-20 space-y-2 border-y-2 border-black bg-background/95 py-3 backdrop-blur-sm">
+        <Input
+          value={filters.query}
+          onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+          placeholder="Search these meetings"
+          aria-label="Search meetings"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="mr-auto text-sm text-muted">
+            {count} match{count === 1 ? "" : "es"}
+          </p>
+          {mode === "nearby" ? (
+            <Button type="button" variant="outline" onClick={() => setShowMap((v) => !v)}>
+              <Map aria-hidden="true" size={18} />
+              {showMap ? "Hide map" : "Map"}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant={activeFilterCount ? "default" : "outline"}
+            aria-expanded={showFilters}
+            aria-controls="meeting-filters"
+            onClick={() => setShowFilters(true)}
+          >
             <SlidersHorizontal aria-hidden="true" size={18} />
             Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
-          </span>
-          <ChevronDown
-            aria-hidden="true"
-            size={18}
-            className={cn("transition-transform", showFilters && "rotate-180")}
-          />
-        </Button>
+          </Button>
+        </div>
       </div>
 
-      <section
-        id="meeting-filters"
-        aria-label="Meeting filters"
+      <button
+        type="button"
         className={cn(
-          "space-y-5 border-2 border-black bg-card p-4 shadow-[4px_4px_0_0_#000] md:block",
-          showFilters ? "block" : "hidden",
+          "fixed inset-0 z-40 cursor-default bg-black/75 transition-opacity duration-300 motion-reduce:transition-none",
+          showFilters ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        aria-label="Close filters"
+        tabIndex={showFilters ? 0 : -1}
+        onClick={() => setShowFilters(false)}
+      />
+
+      <section
+        ref={filterPanelRef}
+        id="meeting-filters"
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!showFilters}
+        aria-labelledby="meeting-filters-title"
+        className={cn(
+          "fixed inset-y-0 right-0 z-50 w-[min(92vw,32rem)] overflow-y-auto border-l-4 border-black bg-card shadow-[-8px_0_0_0_#ff2ad4] transition-[transform,visibility] duration-300 motion-reduce:transition-none",
+          showFilters ? "visible translate-x-0" : "invisible translate-x-full",
         )}
       >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b-4 border-black bg-warn px-4 py-3 text-black">
+          <div>
+            <h2
+              id="meeting-filters-title"
+              className="font-display text-2xl uppercase tracking-tight"
+            >
+              Filter meetings
+            </h2>
+            <p className="text-sm font-semibold">
+              {count} match{count === 1 ? "" : "es"}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="grid size-12 place-items-center border-2 border-black bg-card text-foreground shadow-[3px_3px_0_0_#000]"
+            aria-label="Close filters"
+            onClick={() => setShowFilters(false)}
+          >
+            <X aria-hidden="true" size={24} />
+          </button>
+        </div>
+        <div className="space-y-5 p-4">
         <FilterGroup label="Fellowship">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(["all", "aa", "na", "ca"] as const).map((value) => (
@@ -475,21 +632,16 @@ export function Finder({
           </FilterGroup>
         ) : null}
 
-        <div className="flex justify-end border-t-2 border-black pt-4">
+        <div className="flex flex-wrap justify-end gap-2 border-t-2 border-black pt-4">
           <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
             Reset filters
           </Button>
+          <Button type="button" onClick={() => setShowFilters(false)}>
+            Show {count} match{count === 1 ? "" : "es"}
+          </Button>
+        </div>
         </div>
       </section>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="text-sm text-muted">{count} match{count === 1 ? "" : "es"} with these filters</p>
-        {mode === "nearby" ? (
-          <Button variant="outline" onClick={() => setShowMap((v) => !v)}>
-            {showMap ? "Hide map" : "Show map"}
-          </Button>
-        ) : null}
-      </div>
 
       {showMap ? <MeetingMap meetings={flat} origin={origin} /> : null}
 
