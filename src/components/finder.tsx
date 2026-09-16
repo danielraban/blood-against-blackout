@@ -51,7 +51,7 @@ export function Finder({
   const [filters, setFilters] = useState<SearchFilters>({
     ...DEFAULT_FILTERS,
     attendance: mode === "online" ? "online" : "either",
-    week: mode === "online",
+    week: true,
   });
   const [cityQuery, setCityQuery] = useState("");
   const [cities, setCities] = useState<City[]>([]);
@@ -285,7 +285,7 @@ export function Finder({
   const defaultFilters: SearchFilters = {
     ...DEFAULT_FILTERS,
     attendance: mode === "online" ? "online" : "either",
-    week: mode === "online",
+    week: true,
   };
   const activeFilterCount = [
     filters.fellowship !== defaultFilters.fellowship,

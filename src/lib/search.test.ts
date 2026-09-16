@@ -78,3 +78,35 @@ test("week results expose calendar day offsets for day-based headings", () => {
   );
   assert.equal(result.groups.week[0]?.daysUntil, 1);
 });
+
+test("remaining meetings later today stay visible until midnight", () => {
+  const now = new Date(2026, 8, 16, 20, 0);
+  const result = filterAndGroup(
+    [
+      { ...meeting, slug: "now", day: now.getDay(), time: "19:30", endTime: "20:30" },
+      { ...meeting, slug: "tonight", day: now.getDay(), time: "23:15" },
+    ],
+    DEFAULT_FILTERS,
+    null,
+    now,
+  );
+  assert.equal(result.groups.happening[0]?.slug, "now");
+  assert.equal(result.groups.later[0]?.slug, "tonight");
+  assert.equal(result.groups.later[0]?.daysUntil, 0);
+});
+
+test("after a location search, later today and upcoming days are both included", () => {
+  const now = new Date(2026, 8, 16, 20, 0);
+  const tomorrow = (now.getDay() + 1) % 7;
+  const result = filterAndGroup(
+    [
+      { ...meeting, slug: "tonight", day: now.getDay(), time: "23:00" },
+      { ...meeting, slug: "tomorrow", day: tomorrow, time: "19:00" },
+    ],
+    { ...DEFAULT_FILTERS, week: true },
+    null,
+    now,
+  );
+  assert.equal(result.groups.later[0]?.slug, "tonight");
+  assert.equal(result.groups.week[0]?.slug, "tomorrow");
+});
