@@ -7,6 +7,7 @@ import { MeetingMap } from "@/components/meeting-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { encodeGeohash4 } from "@/lib/geo";
+import { formatCitySuggestion } from "@/lib/location";
 import {
   DEFAULT_FILTERS,
   type City,
@@ -405,9 +406,7 @@ export function Finder({
                             }}
                           >
                             <span className="truncate">
-                              {city.label}
-                              {city.state ? `, ${city.state}` : ""}
-                              {city.country ? `, ${city.country}` : ""}
+                              {formatCitySuggestion(city)}
                             </span>
                             <span className="shrink-0 text-sm opacity-70">
                               {city.meetingCount}

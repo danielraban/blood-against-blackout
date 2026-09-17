@@ -18,6 +18,7 @@ const meeting: Meeting = {
   locationName: null,
   address: "10 High Street",
   city: "Oxford",
+  neighborhood: null,
   state: null,
   postalCode: null,
   country: "GB",

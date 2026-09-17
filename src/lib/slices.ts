@@ -27,6 +27,7 @@ function toMeeting(
     locationName: row.locationName,
     address: row.address,
     city: row.city,
+    neighborhood: row.neighborhood,
     state: row.state,
     postalCode: row.postalCode,
     country: row.country,
@@ -53,11 +54,15 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
   const db = getDb();
   const neighbors = neighborGeohashes(geohash);
   const localCities = await db
-    .select({ label: cities.label })
+    .select({ label: cities.label, parentLabel: cities.parentLabel })
     .from(cities)
     .where(inArray(cities.geohash4, neighbors));
   const cityLabels = [
-    ...new Set(localCities.map((city) => city.label).filter(Boolean)),
+    ...new Set(
+      localCities
+        .flatMap((city) => [city.label, city.parentLabel])
+        .filter((label): label is string => Boolean(label)),
+    ),
   ];
   const rows = await db
     .select({ meeting: meetings, feed: feeds })

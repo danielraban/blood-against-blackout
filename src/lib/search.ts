@@ -187,6 +187,7 @@ export function filterAndGroup(
         meeting.groupName,
         meeting.locationName,
         meeting.city,
+        meeting.neighborhood,
         meeting.state,
         meeting.country,
         meeting.address,

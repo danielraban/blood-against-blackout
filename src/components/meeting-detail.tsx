@@ -74,7 +74,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
         ) : null}
         {meeting.lat != null && meeting.lng != null ? (
           <a
-            href={mapsUrl(meeting.lat, meeting.lng, meeting.name)}
+            href={mapsUrl(meeting.lat, meeting.lng)}
             target="_blank"
             rel="noreferrer"
           >

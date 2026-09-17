@@ -4,9 +4,12 @@ import type { Attendance } from "./types";
 import type { Fellowship } from "./fellowship";
 import {
   cleanLocationPart,
+  isBmltAreaName,
+  isPostalCode,
+  isStateCode,
   isUsableCityLabel,
   normalizeCountry,
-  normalizeState,
+  normalizePlaceFields,
 } from "./location";
 
 export type RawMeeting = Record<string, unknown>;
@@ -26,6 +29,7 @@ export type ParsedMeeting = {
   locationName: string | null;
   address: string | null;
   city: string | null;
+  neighborhood: string | null;
   state: string | null;
   postalCode: string | null;
   country: string | null;
@@ -115,6 +119,7 @@ function cityFromFormatted(formatted: string | null, country: string | null) {
   for (const part of parts) {
     const lower = part.toLowerCase();
     if (skip.has(lower) || /^\d/.test(part) || part.length > 40) continue;
+    if (isPostalCode(part) || isStateCode(part) || isBmltAreaName(part)) continue;
     if (/^[A-Z]{1,2}\d/.test(part)) continue;
     if (lower === "london" || lower.includes("london")) return "London";
     if (parts.indexOf(part) >= 1) {
@@ -251,16 +256,13 @@ export function parseTsmlMeeting(
   const country = normalizeCountry(asString(raw.country));
   const explicitCity = cleanLocationPart(asString(raw.city));
   const inferredCity = cityFromFormatted(formattedAddress, country);
-  const city = isUsableCityLabel(explicitCity)
-    ? explicitCity
-    : isUsableCityLabel(inferredCity)
-      ? inferredCity
-      : null;
-  const stateCandidate = normalizeState(asString(raw.state) || asString(raw.region));
-  const state =
-    city && stateCandidate?.localeCompare(city, undefined, { sensitivity: "base" }) === 0
-      ? null
-      : stateCandidate;
+  const place = normalizePlaceFields({
+    city: isUsableCityLabel(explicitCity) ? explicitCity : inferredCity,
+    neighborhood: null,
+    state: asString(raw.state) || asString(raw.region),
+    postalCode: asString(raw.postal_code),
+    country,
+  });
 
   return {
     feedId,
@@ -276,10 +278,11 @@ export function parseTsmlMeeting(
     fellowship,
     locationName: asString(raw.location),
     address: asString(raw.address),
-    city,
-    state,
-    postalCode: asString(raw.postal_code),
-    country,
+    city: place.city,
+    neighborhood: place.neighborhood,
+    state: place.state,
+    postalCode: place.postalCode,
+    country: place.country,
     formattedAddress,
     ...withGeo(lat, lng),
     conferenceUrl: asString(raw.conference_url),
@@ -317,22 +320,18 @@ export function parseBmltMeeting(
     attendance = "hybrid";
   if (conferenceUrl && attendance === "in-person") attendance = "hybrid";
 
-  const rawCity =
-    cleanLocationPart(asString(raw.location_municipality)) ||
-    cleanLocationPart(asString(raw.location_city_subsection));
-  const city = isUsableCityLabel(rawCity) ? rawCity : null;
+  const place = normalizePlaceFields({
+    city: asString(raw.location_municipality),
+    neighborhood: asString(raw.location_city_subsection),
+    state: asString(raw.location_province) || asString(raw.location_sub_province),
+    postalCode: asString(raw.location_postal_code_1),
+    country: asString(raw.location_nation),
+  });
   const address = asString(raw.location_street);
-  const stateCandidate = normalizeState(
-    asString(raw.location_province) || asString(raw.location_sub_province),
-  );
-  const state =
-    city && stateCandidate?.localeCompare(city, undefined, { sensitivity: "base" }) === 0
-      ? null
-      : stateCandidate;
-  const postalCode = asString(raw.location_postal_code_1);
-  const country = normalizeCountry(asString(raw.location_nation));
   const formattedAddress =
-    [address, city, state, postalCode, country].filter(Boolean).join(", ") || null;
+    [address, place.neighborhood, place.city, place.state, place.postalCode, place.country]
+      .filter(Boolean)
+      .join(", ") || null;
   const notes = [asString(raw.comments), asString(raw.virtual_meeting_additional_info)]
     .filter(Boolean)
     .join("\n") || null;
@@ -354,10 +353,11 @@ export function parseBmltMeeting(
     fellowship,
     locationName: asString(raw.location_text),
     address,
-    city,
-    state,
-    postalCode,
-    country,
+    city: place.city,
+    neighborhood: place.neighborhood,
+    state: place.state,
+    postalCode: place.postalCode,
+    country: place.country,
     formattedAddress,
     ...withGeo(lat, lng),
     conferenceUrl,
@@ -369,7 +369,7 @@ export function parseBmltMeeting(
     entityPhone: null,
     entityEmail: null,
     entityUrl: asString(raw.root_server_uri),
-    entityLocation: city,
+    entityLocation: place.city,
     feedbackEmails: [],
   };
 }

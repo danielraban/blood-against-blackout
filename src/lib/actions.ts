@@ -14,8 +14,9 @@ export function directionsUrl(lat: number, lng: number) {
   return `https://www.openstreetmap.org/directions?to=${lat}%2C${lng}`;
 }
 
-export function mapsUrl(lat: number, lng: number, label: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}(${encodeURIComponent(label)})`;
+export function mapsUrl(lat: number, lng: number) {
+  const destination = `${lat},${lng}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 }
 
 function pad(n: number) {

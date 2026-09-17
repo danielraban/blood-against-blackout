@@ -24,6 +24,14 @@ test("HTML bodies are not treated as JSON", () => {
   assert.equal(isProbablyJson("text/html", "<html><head>"), false);
   assert.equal(isProbablyJson("application/json", "[]"), true);
   assert.equal(isProbablyJson("text/plain", "<!DOCTYPE html>"), false);
+  assert.equal(isProbablyJson("text/html; charset=UTF-8", "[{}]"), true);
+});
+
+test("BMLT search URLs also try index.php", () => {
+  const fallbacks = fallbackFeedUrls(
+    "https://bmlt.wisconsinna.org/main_server/client_interface/json/?switcher=GetSearchResults",
+  );
+  assert.ok(fallbacks.some((url) => url.includes("index.php")));
 });
 
 test("BMLT roots fall back to GetSearchResults JSON", () => {

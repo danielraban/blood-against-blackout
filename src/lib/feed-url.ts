@@ -36,11 +36,10 @@ export function canonicalFeedUrl(raw: string) {
 }
 
 export function isProbablyJson(contentType: string | null, body: string) {
-  const type = contentType?.toLowerCase() ?? "";
-  if (type.includes("json")) return true;
-  if (type.includes("html") || type.includes("xml")) return false;
   const trimmed = body.trim();
-  return trimmed.startsWith("{") || trimmed.startsWith("[");
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) return true;
+  const type = contentType?.toLowerCase() ?? "";
+  return type.includes("json") && !type.includes("html");
 }
 
 export function fallbackFeedUrls(raw: string) {
@@ -50,7 +49,14 @@ export function fallbackFeedUrls(raw: string) {
   } catch {
     return [];
   }
-  if (url.pathname.includes("/client_interface/")) return [];
+  if (url.pathname.includes("/client_interface/")) {
+    const path = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
+    const search = url.search || "?switcher=GetSearchResults";
+    const current = canonicalFeedUrl(raw);
+    return [
+      canonicalFeedUrl(`${url.origin}${path}index.php${search}`),
+    ].filter((candidate) => candidate !== current);
+  }
   if (/bmlt|main_server/i.test(`${url.hostname}${url.pathname}`)) {
     const root = `${url.origin}${url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`}`;
     return [canonicalFeedUrl(`${root}client_interface/json/?switcher=GetSearchResults`)];

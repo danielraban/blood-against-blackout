@@ -83,6 +83,8 @@ export async function runMeetingAudit(): Promise<MeetingAudit> {
         (select count(*) from public_rows where attendance <> 'online' and (
           lower(btrim(city)) in ('online', 'virtual', 'regional')
           or btrim(city) ~ '^[A-Z]{2,3}$'
+          or btrim(city) ~ '^[A-Z]{2}\\s+\\d'
+          or btrim(city) ~ '^\\d{5}'
           or length(btrim(city)) > 80
         ))::int as malformed_city_labels,
         (select count(*) from (

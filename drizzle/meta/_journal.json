@@ -15,6 +15,13 @@
       "when": 1789576030229,
       "tag": "0001_goofy_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789584000000,
+      "tag": "0002_place_canonical",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,7 @@ export type Meeting = {
   locationName: string | null;
   address: string | null;
   city: string | null;
+  neighborhood: string | null;
   state: string | null;
   postalCode: string | null;
   country: string | null;
@@ -41,6 +42,8 @@ export type Meeting = {
 export type City = {
   slug: string;
   label: string;
+  parentLabel?: string | null;
+  aliases?: string[];
   state: string | null;
   country: string | null;
   lat: number;

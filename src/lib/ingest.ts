@@ -22,8 +22,13 @@ import {
   fallbackFeedUrls,
   isProbablyJson,
 } from "./feed-url";
-import { applyRegionHint, isUsableCityLabel } from "./location";
+import { applyRegionHint, isUsableCityLabel, locationNeedsEnrichment, normalizePlaceFields } from "./location";
 import { SOURCE_FRESHNESS_HOURS } from "./verification";
+import {
+  canUseAiCanonicalization,
+  enrichPlace,
+  type PlaceEnrichmentBudget,
+} from "./canonicalize-place";
 
 const seedFeeds = JSON.parse(
   readFileSync(join(process.cwd(), "src/data/feeds.json"), "utf8"),
@@ -51,13 +56,30 @@ export function parseRawMeeting(raw: RawMeeting, feedId: string) {
   return parseTsmlMeeting(raw, feedId, "aa");
 }
 
+const FEED_USER_AGENTS = [
+  "blood-against-blackout/1.0 (meeting finder)",
+  "Mozilla/5.0 (compatible; MeetingGuide; OpenChair)",
+];
+
 async function readMeetingJson(url: string) {
+  let lastError: Error = new Error("Feed fetch failed");
+  for (const userAgent of FEED_USER_AGENTS) {
+    try {
+      return await readMeetingJsonWithAgent(url, userAgent);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Feed fetch failed");
+    }
+  }
+  throw lastError;
+}
+
+async function readMeetingJsonWithAgent(url: string, userAgent: string) {
   let current = await assertPublicHttpsUrl(url);
   for (let redirects = 0; redirects <= 3; redirects += 1) {
     const response = await fetch(current, {
       headers: {
-        Accept: "application/json",
-        "User-Agent": "blood-against-blackout/1.0 (meeting finder)",
+        Accept: "application/json, text/javascript, */*",
+        "User-Agent": userAgent,
       },
       cache: "no-store",
       redirect: "manual",
@@ -241,30 +263,52 @@ async function rebuildCities() {
           and f.status = 'ok'
           and f.last_ok_at >= now() - (${SOURCE_FRESHNESS_HOURS} * interval '1 hour')
       ),
-      cluster_counts as (
+      city_cluster_counts as (
         select city, state, country, identity_scope, geo_cluster, count(*) as cluster_count
         from eligible
         where geo_cluster is not null
         group by city, state, country, identity_scope, geo_cluster
       ),
-      dominant_clusters as (
+      city_dominant as (
         select city, state, country, identity_scope, geo_cluster
         from (
           select *, row_number() over (
             partition by city, state, country, identity_scope
             order by cluster_count desc, geo_cluster
           ) as cluster_rank
-          from cluster_counts
+          from city_cluster_counts
         ) ranked_clusters
         where cluster_rank = 1
       ),
-      aggregated as (
+      neighborhood_cluster_counts as (
+        select neighborhood, city, state, country, identity_scope, geo_cluster, count(*) as cluster_count
+        from eligible
+        where geo_cluster is not null
+          and neighborhood is not null
+          and btrim(neighborhood) <> ''
+          and lower(neighborhood) <> lower(city)
+        group by neighborhood, city, state, country, identity_scope, geo_cluster
+      ),
+      neighborhood_dominant as (
+        select neighborhood, city, state, country, identity_scope, geo_cluster
+        from (
+          select *, row_number() over (
+            partition by neighborhood, city, state, country, identity_scope
+            order by cluster_count desc, geo_cluster
+          ) as cluster_rank
+          from neighborhood_cluster_counts
+        ) ranked_clusters
+        where cluster_rank = 1
+      ),
+      city_aggregated as (
         select
           trim(both '-' from regexp_replace(lower(e.city), '[^[:alnum:]]+', '-', 'g'))
             || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.state), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
             || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.country), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
             || case when e.country is null then '-' || coalesce(e.identity_scope, 'geo') else '' end as slug,
           e.city as label,
+          null::text as parent_label,
+          array[e.city]::text[] as aliases,
           e.state,
           e.country,
           coalesce(
@@ -281,7 +325,7 @@ async function rebuildCities() {
           ) as geohash4,
           count(*)::int as meeting_count
         from eligible e
-        inner join dominant_clusters d
+        inner join city_dominant d
           on d.city = e.city
           and d.state is not distinct from e.state
           and d.country is not distinct from e.country
@@ -289,14 +333,76 @@ async function rebuildCities() {
           and d.geo_cluster = e.geo_cluster
         group by e.city, e.state, e.country, e.identity_scope
       ),
+      neighborhood_aggregated as (
+        select
+          trim(both '-' from regexp_replace(lower(e.neighborhood), '[^[:alnum:]]+', '-', 'g'))
+            || '-' || trim(both '-' from regexp_replace(lower(e.city), '[^[:alnum:]]+', '-', 'g'))
+            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.state), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
+            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.country), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
+            || case when e.country is null then '-' || coalesce(e.identity_scope, 'geo') else '' end as slug,
+          e.neighborhood as label,
+          e.city as parent_label,
+          array[
+            e.neighborhood,
+            e.city,
+            e.neighborhood || ', ' || e.city
+          ]::text[] as aliases,
+          e.state,
+          e.country,
+          coalesce(
+            avg(e.lat) filter (where e.attendance = 'in-person'),
+            avg(e.lat)
+          )::real as lat,
+          coalesce(
+            avg(e.lng) filter (where e.attendance = 'in-person'),
+            avg(e.lng)
+          )::real as lng,
+          coalesce(
+            mode() within group (order by e.geohash4) filter (where e.attendance = 'in-person'),
+            mode() within group (order by e.geohash4)
+          ) as geohash4,
+          count(*)::int as meeting_count
+        from eligible e
+        inner join neighborhood_dominant d
+          on d.neighborhood = e.neighborhood
+          and d.city = e.city
+          and d.state is not distinct from e.state
+          and d.country is not distinct from e.country
+          and d.identity_scope = e.identity_scope
+          and d.geo_cluster = e.geo_cluster
+        group by e.neighborhood, e.city, e.state, e.country, e.identity_scope
+      ),
+      aggregated as (
+        select * from city_aggregated
+        union all
+        select * from neighborhood_aggregated
+      ),
+      unique_places as (
+        select *
+        from (
+          select *, row_number() over (
+            partition by
+              label,
+              coalesce(state, ''),
+              coalesce(country, ''),
+              geohash4
+            order by
+              case when parent_label is null then 0 else 1 end,
+              meeting_count desc,
+              slug
+          ) as place_rank
+          from aggregated
+        ) places
+        where place_rank = 1
+      ),
       ranked as (
         select *, row_number() over (
           partition by slug order by meeting_count desc, label
         ) as rank
-        from aggregated
+        from unique_places
       )
-      insert into cities (slug, label, state, country, lat, lng, geohash4, meeting_count)
-      select slug, label, state, country, lat, lng, geohash4, meeting_count
+      insert into cities (slug, label, state, country, lat, lng, geohash4, meeting_count, parent_label, aliases)
+      select slug, label, state, country, lat, lng, geohash4, meeting_count, parent_label, aliases
       from ranked
       where rank = 1
     `),
@@ -336,6 +442,15 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
   let feedsFail = 0;
   let meetingsUpserted = 0;
   const errors: string[] = [];
+  const enrichmentBudget: PlaceEnrichmentBudget = {
+    reverse: 12,
+    ai: canUseAiCanonicalization() ? 25 : 0,
+  };
+  if (enrichmentBudget.ai === 0) {
+    console.warn(
+      "place.canonicalize.ai_skipped: no AI Gateway auth in this process; using rules and reverse geocode. For local ingest, add AI_GATEWAY_API_KEY to .env.local.",
+    );
+  }
 
   for (const feed of allFeeds) {
     const attemptedAt = new Date();
@@ -347,11 +462,16 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
         .flatMap((item) => parseFeedMeetings(item, feed.id, fellowship, format))
         .map((item) => {
           const jurisdiction = applyRegionHint(item, feed.regionHint);
+          const place = normalizePlaceFields({
+            city: isUsableCityLabel(item.city) ? item.city : null,
+            neighborhood: item.neighborhood,
+            state: jurisdiction.state,
+            postalCode: item.postalCode,
+            country: jurisdiction.country,
+          });
           return {
             ...item,
-            city: isUsableCityLabel(item.city) ? item.city : null,
-            state: jurisdiction.state,
-            country: jurisdiction.country,
+            ...place,
           };
         });
 
@@ -437,10 +557,24 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
           if (item.day == null || item.time == null) {
             continue;
           }
-          if (
-            attendance !== "online" &&
-            (!item.formattedAddress || !item.city)
-          ) {
+          if (attendance !== "online" && !item.formattedAddress) {
+            continue;
+          }
+          let city = item.city;
+          let neighborhood = item.neighborhood;
+          let state = item.state;
+          let postalCode = item.postalCode;
+          let country = item.country;
+          const currentPlace = { city, neighborhood, state, postalCode, country };
+          if (locationNeedsEnrichment(currentPlace)) {
+            const enriched = await enrichPlace(currentPlace, lat, lng, enrichmentBudget);
+            city = enriched.city;
+            neighborhood = enriched.neighborhood;
+            state = enriched.state;
+            postalCode = enriched.postalCode;
+            country = enriched.country;
+          }
+          if (attendance !== "online" && !city) {
             continue;
           }
           meetingRows.push({
@@ -457,10 +591,11 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
             fellowship: item.fellowship,
             locationName: item.locationName,
             address: item.address,
-            city: item.city,
-            state: item.state,
-            postalCode: item.postalCode,
-            country: item.country,
+            city,
+            neighborhood,
+            state,
+            postalCode,
+            country,
             formattedAddress: item.formattedAddress,
             lat,
             lng,
@@ -524,6 +659,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
               locationName: sql`excluded.location_name`,
               address: sql`excluded.address`,
               city: sql`excluded.city`,
+              neighborhood: sql`excluded.neighborhood`,
               state: sql`excluded.state`,
               postalCode: sql`excluded.postal_code`,
               country: sql`excluded.country`,

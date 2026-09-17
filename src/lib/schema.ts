@@ -59,6 +59,7 @@ export const meetings = pgTable(
     locationName: text("location_name"),
     address: text("address"),
     city: text("city"),
+    neighborhood: text("neighborhood"),
     state: text("state"),
     postalCode: text("postal_code"),
     country: text("country"),
@@ -96,6 +97,8 @@ export const cities = pgTable(
     lng: real("lng").notNull(),
     geohash4: text("geohash4").notNull(),
     meetingCount: integer("meeting_count").notNull().default(0),
+    parentLabel: text("parent_label"),
+    aliases: text("aliases").array().notNull().default([]),
   },
   (table) => [
     uniqueIndex("cities_label_state_country_idx").on(
@@ -123,5 +126,18 @@ export const geocodeCache = pgTable("geocode_cache", {
   query: text("query").primaryKey(),
   lat: real("lat").notNull(),
   lng: real("lng").notNull(),
+  cachedAt: timestamp("cached_at", { withTimezone: true }).notNull(),
+});
+
+export const placeCanonicalCache = pgTable("place_canonical_cache", {
+  fingerprint: text("fingerprint").primaryKey(),
+  city: text("city"),
+  neighborhood: text("neighborhood"),
+  state: text("state"),
+  country: text("country"),
+  postalCode: text("postal_code"),
+  aliases: text("aliases").array().notNull().default([]),
+  confidence: real("confidence"),
+  source: text("source").notNull(),
   cachedAt: timestamp("cached_at", { withTimezone: true }).notNull(),
 });

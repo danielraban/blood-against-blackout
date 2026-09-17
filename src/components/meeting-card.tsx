@@ -34,6 +34,7 @@ export function MeetingCard({
             {showDay && meeting.day != null ? `${weekdayLabel(meeting.day)} · ` : ""}
             {formatTime(meeting.time)}
             {meeting.locationName ? ` · ${meeting.locationName}` : ""}
+            {meeting.neighborhood ? ` · ${meeting.neighborhood}` : ""}
             {meeting.city ? ` · ${meeting.city}` : ""}
           </p>
         </div>

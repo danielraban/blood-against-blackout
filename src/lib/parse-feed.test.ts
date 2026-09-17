@@ -66,6 +66,88 @@ test("city duplicated into the region field is not retained as state", () => {
   assert.equal(meeting?.state, null);
 });
 
+test("BMLT parser recovers Brooklyn municipality from messy area fields", () => {
+  const downtown = parseBmltMeeting(
+    {
+      id_bigint: "10",
+      meeting_name: "Downtown",
+      weekday_tinyint: 2,
+      start_time: "19:00",
+      location_municipality: "Brooklyn",
+      location_province: "02 Downtown / Park Slope / Red Hook",
+      location_nation: "US",
+      latitude: 40.67,
+      longitude: -73.98,
+    },
+    "feed",
+    "na",
+  );
+  assert.equal(downtown?.city, "Brooklyn");
+  assert.equal(downtown?.neighborhood, null);
+  assert.equal(downtown?.state, null);
+
+  const north = parseBmltMeeting(
+    {
+      id_bigint: "11",
+      meeting_name: "North",
+      weekday_tinyint: 2,
+      start_time: "19:00",
+      location_municipality: "NY 11206",
+      location_province: "01 North Brooklyn",
+      location_nation: "US",
+      latitude: 40.7,
+      longitude: -73.94,
+    },
+    "feed",
+    "na",
+  );
+  assert.equal(north?.city, "Brooklyn");
+  assert.equal(north?.neighborhood, "North Brooklyn");
+  assert.equal(north?.state, "NY");
+  assert.equal(north?.postalCode, "11206");
+});
+
+test("TSML parser maps a London borough without collapsing Ontario", () => {
+  const camden = parseTsmlMeeting(
+    {
+      id: "camden",
+      name: "Camden",
+      city: "Camden",
+      state: "London",
+      country: "UK",
+      day: 1,
+      time: "18:00",
+      latitude: 51.54,
+      longitude: -0.14,
+    },
+    "feed",
+    "aa",
+  );
+  assert.equal(camden?.city, "London");
+  assert.equal(camden?.neighborhood, "Camden");
+  assert.equal(camden?.country, "GB");
+
+  const ontario = parseTsmlMeeting(
+    {
+      id: "london-on",
+      name: "London ON",
+      city: "London",
+      state: "ON",
+      country: "CA",
+      day: 1,
+      time: "18:00",
+      latitude: 42.98,
+      longitude: -81.25,
+    },
+    "feed",
+    "aa",
+  );
+  assert.equal(ontario?.city, "London");
+  assert.equal(ontario?.state, "ON");
+  assert.equal(ontario?.country, "CA");
+  assert.equal(ontario?.neighborhood, null);
+});
+
 test("BMLT parser normalizes jurisdiction values", () => {
   const meeting = parseBmltMeeting(
     {

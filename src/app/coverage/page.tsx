@@ -56,6 +56,7 @@ export default function CoveragePage() {
       locationName: city.label,
       address: null,
       city: city.label,
+      neighborhood: null,
       state: null,
       postalCode: null,
       country: city.country,
