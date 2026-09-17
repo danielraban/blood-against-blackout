@@ -58,8 +58,9 @@ deterministic Playwright smoke tests whose API responses are mocked.
 
 After Vercel finishes a preview deployment, a separate workflow checks the
 preview's `/api/health` endpoint against its real environment and Neon
-connection. If preview protection is enabled, add a
-`VERCEL_AUTOMATION_BYPASS_SECRET` GitHub Actions secret that matches the Vercel
-protection bypass value. Keep database migrations, ingest, and `npm run audit`
-pointed at a staging database; they are intentionally not part of the
-pull-request gate.
+connection. Protected previews return 302 to Vercel Authentication unless GitHub
+Actions can send a bypass token: in Vercel go to Project Settings → Deployment
+Protection → Protection Bypass for Automation, then add that same value as the
+GitHub Actions secret `VERCEL_AUTOMATION_BYPASS_SECRET`. Keep database
+migrations, ingest, and `npm run audit` pointed at a staging database; they are
+intentionally not part of the pull-request gate.

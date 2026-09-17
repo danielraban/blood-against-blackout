@@ -27,29 +27,68 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$DEPLOYMENT_URL" ]]; then
+          if [[ -z "${DEPLOYMENT_URL:-}" ]]; then
             echo "The deployment event did not include a preview URL."
             exit 1
           fi
 
           health_url="${DEPLOYMENT_URL%/}/api/health"
-          for attempt in {1..12}; do
-            status="$(
-              curl --silent --show-error \
-                --max-time 15 \
-                --output health.json \
-                --write-out "%{http_code}" \
-                --header "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
-                "$health_url" || true
-            )"
-            if [[ "$status" == "200" ]] && node --input-type=module -e '
+          echo "Checking preview health at ${health_url}"
+
+          curl_headers=()
+          if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+            curl_headers+=(
+              --header "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}"
+              --header "x-vercel-set-bypass-cookie: true"
+            )
+          else
+            echo "VERCEL_AUTOMATION_BYPASS_SECRET is unset in GitHub Actions."
+          fi
+
+          request_health() {
+            curl --silent --show-error \
+              --max-time 15 \
+              --output health.json \
+              --write-out "%{http_code}" \
+              "${curl_headers[@]}" \
+              "$1" || true
+          }
+
+          health_ok() {
+            [[ "$1" == "200" ]] && node --input-type=module -e '
               import fs from "node:fs";
               const body = JSON.parse(fs.readFileSync("health.json", "utf8"));
               process.exit(body.ok === true ? 0 : 1);
-            '; then
+            '
+          }
+
+          for attempt in {1..12}; do
+            status="$(request_health "$health_url")"
+            if health_ok "$status"; then
               echo "Preview health check passed."
               exit 0
             fi
+
+            if [[ "$status" == "302" || "$status" == "401" || "$status" == "403" ]]; then
+              if [[ -z "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+                echo "Preview protection redirected the health check (HTTP ${status})."
+                echo "Create a Protection Bypass for Automation secret in the Vercel project, then add the same value as the GitHub Actions secret VERCEL_AUTOMATION_BYPASS_SECRET."
+                exit 1
+              fi
+
+              bypass_url="${health_url}?x-vercel-protection-bypass=${VERCEL_AUTOMATION_BYPASS_SECRET}&x-vercel-set-bypass-cookie=true"
+              status="$(request_health "$bypass_url")"
+              if health_ok "$status"; then
+                echo "Preview health check passed."
+                exit 0
+              fi
+
+              echo "A bypass secret was sent but Vercel still returned HTTP ${status:-000}."
+              echo "Confirm the GitHub secret matches the current Vercel Protection Bypass value."
+              if [[ -f health.json ]]; then cat health.json; fi
+              exit 1
+            fi
+
             echo "Health check attempt $attempt returned HTTP ${status:-000}; retrying."
             sleep 5
           done
