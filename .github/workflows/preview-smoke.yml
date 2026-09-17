@@ -1,0 +1,59 @@
+name: Preview health
+
+on:
+  deployment_status:
+
+concurrency:
+  group: preview-health-${{ github.event.deployment.id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  health:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment != 'Production' &&
+      github.event.deployment.environment != 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Verify preview health
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$DEPLOYMENT_URL" ]]; then
+            echo "The deployment event did not include a preview URL."
+            exit 1
+          fi
+
+          health_url="${DEPLOYMENT_URL%/}/api/health"
+          for attempt in {1..12}; do
+            status="$(
+              curl --silent --show-error \
+                --max-time 15 \
+                --output health.json \
+                --write-out "%{http_code}" \
+                --header "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+                "$health_url" || true
+            )"
+            if [[ "$status" == "200" ]] && node --input-type=module -e '
+              import fs from "node:fs";
+              const body = JSON.parse(fs.readFileSync("health.json", "utf8"));
+              process.exit(body.ok === true ? 0 : 1);
+            '; then
+              echo "Preview health check passed."
+              exit 0
+            fi
+            echo "Health check attempt $attempt returned HTTP ${status:-000}; retrying."
+            sleep 5
+          done
+
+          echo "Preview health check failed."
+          if [[ -f health.json ]]; then cat health.json; fi
+          exit 1

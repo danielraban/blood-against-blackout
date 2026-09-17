@@ -26,6 +26,12 @@ Optional: `npm run sample` loads the bundled San Jose sample into Neon. `npm run
 
 - `npm run dev` — Turbopack
 - `npm run build` — webpack production build
+- `npm run lint` — Next.js and TypeScript lint checks
+- `npm run typecheck` — strict TypeScript validation without emitting files
+- `npm test` — fast domain and security unit tests
+- `npm run test:e2e` — Playwright browser and accessibility smoke tests
+- `npm run check` — the local CI gate: lint, typecheck, unit tests, and build
+- `npm run audit` — validate meeting data quality against the configured database
 - `npm run db:migrate` — apply checked-in Drizzle migrations
 - `npm run ingest` — pull public feeds into Neon and rebuild the city index
 - `npm run discover` — probe TSML hosts (including UK intergroups) and add working public feeds
@@ -43,3 +49,17 @@ There is no single national AA feed. blood against blackout uses the same public
 6. Promote the verified preview. `vercel.json` runs a bounded nightly ingest; Vercel sends `CRON_SECRET` as its bearer token.
 
 Never commit `.env.local`. The admin cookie is signed and expires after seven days. Opening the optional map sends the visible map area and standard request metadata to OpenFreeMap.
+
+## Quality gates
+
+Run `npm run check` before opening a pull request. Pull requests run the same
+lint, typecheck, unit-test, and production-build checks in GitHub Actions, plus
+deterministic Playwright smoke tests whose API responses are mocked.
+
+After Vercel finishes a preview deployment, a separate workflow checks the
+preview's `/api/health` endpoint against its real environment and Neon
+connection. If preview protection is enabled, add a
+`VERCEL_AUTOMATION_BYPASS_SECRET` GitHub Actions secret that matches the Vercel
+protection bypass value. Keep database migrations, ingest, and `npm run audit`
+pointed at a staging database; they are intentionally not part of the
+pull-request gate.

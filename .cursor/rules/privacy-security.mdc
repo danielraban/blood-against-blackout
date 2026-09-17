@@ -1,0 +1,20 @@
+---
+description: Privacy and security invariants for OpenChair
+alwaysApply: true
+---
+
+# Privacy and security
+
+- Precise GPS coordinates stay in the browser. Server requests may contain only
+  the existing coarse geohash or a city slug.
+- Favorites and saved places remain device-local in IndexedDB unless the user
+  explicitly approves a product change.
+- All admin and cron mutations must fail closed in production and retain their
+  route-level authorization checks.
+- Validate user-supplied feed URLs through `src/lib/url-security.ts`; preserve
+  HTTPS-only and private-network protections across redirects and DNS results.
+- Never print, commit, snapshot, or expose values from `.env*`. Tests use
+  obvious non-secret placeholders and restore changed environment variables.
+- Opening the map is the user-controlled boundary for requests to OpenFreeMap.
+- Live database audits use staging infrastructure. Pull-request tests must not
+  mutate shared Neon branches.
