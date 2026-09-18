@@ -6,6 +6,7 @@ import {
   parseTsmlMeeting,
   dedupeMeetingsBySlug,
   uniqueDaySlug,
+  parseOiaaMeeting,
 } from "./parse-feed";
 
 test("TSML region is not incorrectly used as the city", () => {
@@ -259,4 +260,49 @@ test("duplicate feed/slug rows collapse before insert", () => {
   ]);
   assert.equal(rows.length, 2);
   assert.equal(rows.find((row) => row.slug === "same")?.name, "second");
+});
+
+test("OIAA online meetings convert UTC start times into local day and time", () => {
+  const meeting = parseOiaaMeeting(
+    {
+      groupID: "abc",
+      slug: "serenity-at-sunrise-5",
+      name: "Serenity At Sunrise",
+      timezone: "America/New_York",
+      timeUTC: "2026-09-18T13:30:00.000Z",
+      duration: 60,
+      conference_url: "https://zoom.us/j/3973109350",
+      formats: ["DR", "MED"],
+      type: "C",
+      communities: ["W"],
+      languages: ["en"],
+      groupEmail: "serenity@example.com",
+    },
+    "oiaa-online",
+    "aa",
+  );
+
+  assert.equal(meeting?.attendance, "online");
+  assert.equal(meeting?.day, 5);
+  assert.equal(meeting?.time, "09:30");
+  assert.equal(meeting?.endTime, "10:30");
+  assert.ok(meeting?.types.includes("ONL"));
+  assert.ok(meeting?.types.includes("C"));
+  assert.ok(meeting?.types.includes("W"));
+  assert.equal(meeting?.conferenceUrl, "https://zoom.us/j/3973109350");
+});
+
+test("OIAA listings without a join URL or phone are skipped", () => {
+  const meeting = parseOiaaMeeting(
+    {
+      groupID: "abc",
+      name: "No Join Info",
+      timezone: "America/New_York",
+      timeUTC: "2026-09-18T13:30:00.000Z",
+      conference_url: null,
+    },
+    "oiaa-online",
+    "aa",
+  );
+  assert.equal(meeting, null);
 });

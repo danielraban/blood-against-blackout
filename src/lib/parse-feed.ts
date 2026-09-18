@@ -1,7 +1,8 @@
 import { encodeGeohash4 } from "./geo";
 import { slugify } from "./utils";
 import type { Attendance } from "./types";
-import type { Fellowship } from "./fellowship";
+import type { FeedFormat, Fellowship } from "./fellowship";
+import { isValidTimeZone } from "./timezone";
 import {
   cleanLocationPart,
   isBmltAreaName,
@@ -197,6 +198,123 @@ export function looksLikeBmlt(raw: RawMeeting) {
   );
 }
 
+export function looksLikeOiaa(raw: RawMeeting) {
+  return asString(raw.groupID) != null && asString(raw.timeUTC) != null;
+}
+
+function addMinutes(start: string | null, minutes: number | null) {
+  if (!start || minutes == null || !Number.isFinite(minutes)) return null;
+  const match = start.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const total = Number(match[1]) * 60 + Number(match[2]) + Math.round(minutes);
+  const mins = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+const WEEKDAY_INDEX: Record<string, number> = {
+  sun: 0,
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+};
+
+export function localDayAndTimeFromUtc(timeUtc: string, timezone: string | null) {
+  const date = new Date(timeUtc);
+  if (Number.isNaN(date.getTime())) return { day: null, time: null };
+  const zone = timezone && isValidTimeZone(timezone) ? timezone : "UTC";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const weekday = parts.find((part) => part.type === "weekday")?.value.slice(0, 3).toLowerCase();
+  const hour = parts.find((part) => part.type === "hour")?.value;
+  const minute = parts.find((part) => part.type === "minute")?.value;
+  const day = weekday ? WEEKDAY_INDEX[weekday] ?? null : null;
+  const time =
+    hour != null && minute != null ? `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}` : null;
+  return { day: day ?? null, time };
+}
+
+export function parseOiaaMeeting(
+  raw: RawMeeting,
+  feedId: string,
+  fellowship: Fellowship,
+): ParsedMeeting | null {
+  const name = asString(raw.name);
+  const slug = asString(raw.slug) || asString(raw.groupID) || (name ? slugify(name) : null);
+  if (!name || !slug) return null;
+  const conferenceUrl = asString(raw.conference_url);
+  const conferencePhone = asString(raw.conference_phone);
+  if (!conferenceUrl && !conferencePhone) return null;
+  const timezone = asString(raw.timezone);
+  const { day, time } = localDayAndTimeFromUtc(asString(raw.timeUTC) ?? "", timezone);
+  if (day == null || !time) return null;
+  const types = [
+    ...asStringArray(raw.formats),
+    asString(raw.type),
+    ...asStringArray(raw.communities),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.toUpperCase());
+  if (asStringArray(raw.languages).some((language) => language.toLowerCase().startsWith("es"))) {
+    types.push("SP");
+  }
+  if (!types.includes("ONL")) types.push("ONL");
+  const notes =
+    [
+      asString(raw.notes),
+      asString(raw.groupNotes),
+      asString(raw.conference_url_notes),
+      asString(raw.conference_phone_notes),
+    ]
+      .filter(Boolean)
+      .join("\n") || null;
+
+  return {
+    feedId,
+    slug: slug.slice(0, 64),
+    name: name.slice(0, 255),
+    groupName: name,
+    day,
+    time,
+    endTime: addMinutes(time, asNumber(raw.duration)),
+    timezone,
+    types,
+    attendance: "online",
+    fellowship,
+    locationName: null,
+    address: null,
+    city: null,
+    neighborhood: null,
+    state: null,
+    postalCode: null,
+    country: null,
+    formattedAddress: null,
+    lat: null,
+    lng: null,
+    geohash4: null,
+    conferenceUrl,
+    conferencePhone,
+    notes,
+    locationNotes: asString(raw.conference_url_notes),
+    updatedAt: parseUpdated(raw.updated),
+    entityName: "Online Intergroup of A.A.",
+    entityPhone: null,
+    entityEmail: asString(raw.groupEmail),
+    entityUrl: "https://aa-intergroup.org/meetings/",
+    entityLocation: null,
+    feedbackEmails: asStringArray(raw.groupEmail),
+  };
+}
+
 export function asMeetingArray(data: unknown): RawMeeting[] {
   if (Array.isArray(data)) return data as RawMeeting[];
   if (data && typeof data === "object") {
@@ -378,8 +496,13 @@ export function parseFeedMeetings(
   raw: RawMeeting,
   feedId: string,
   fellowship: Fellowship,
-  format: "tsml" | "bmlt",
+  format: FeedFormat,
 ): ParsedMeeting[] {
+  const useOiaa = format === "oiaa" || looksLikeOiaa(raw);
+  if (useOiaa) {
+    const parsed = parseOiaaMeeting(raw, feedId, fellowship);
+    return parsed ? [parsed] : [];
+  }
   const useBmlt = format === "bmlt" || looksLikeBmlt(raw);
   if (useBmlt) {
     const parsed = parseBmltMeeting(raw, feedId, fellowship);

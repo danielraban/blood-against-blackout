@@ -21,7 +21,7 @@ type AdminBody = {
   id?: string;
   status?: "disabled" | "pending";
   fellowship?: "aa" | "na" | "ca";
-  format?: "tsml" | "bmlt";
+  format?: "tsml" | "bmlt" | "oiaa";
 };
 
 export async function GET() {
@@ -161,7 +161,7 @@ async function parseBody(request: Request): Promise<AdminBody> {
   } else if (record.fellowship != null) {
     throw new Error("Invalid fellowship");
   }
-  if (record.format === "tsml" || record.format === "bmlt") {
+  if (record.format === "tsml" || record.format === "bmlt" || record.format === "oiaa") {
     body.format = record.format;
   } else if (record.format != null) {
     throw new Error("Invalid feed format");

@@ -25,6 +25,7 @@ import {
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
 import { ComicStrip } from "@/components/comic-strip";
+import { OfficialLocators } from "@/components/official-locators";
 import { cn } from "@/lib/utils";
 import { Map, SlidersHorizontal, X } from "lucide-react";
 
@@ -876,25 +877,9 @@ function EmptyCoverage({ city }: { city?: string }) {
           ? `No public feed covers ${city} yet.`
           : "No public feed covers this area yet."}
       </p>
+      <OfficialLocators intro="A missing city usually means the local office has not published Meeting Guide, TSML, or BMLT JSON — not that there are no meetings." />
       <p className="text-muted">
-        Local offices publish public Meeting Guide, TSML, or BMLT JSON.
-        If your intergroup has a public feed, it can be added on the Feeds page.
         Meanwhile, online meetings still work worldwide.
-      </p>
-      <p className="text-sm text-muted">
-        UK A.A. national listings live on{" "}
-        <a className="underline" href="https://www.alcoholics-anonymous.org.uk/AA-Meetings/Find-a-Meeting">
-          alcoholics-anonymous.org.uk
-        </a>
-        . UK NA is at{" "}
-        <a className="underline" href="https://www.ukna.org">
-          ukna.org
-        </a>
-        . UK CA is at{" "}
-        <a className="underline" href="https://meetings.cocaineanonymous.org.uk/meetings/">
-          meetings.cocaineanonymous.org.uk
-        </a>
-        .
       </p>
       <div className="flex gap-2">
         <a href="/online">

@@ -104,6 +104,12 @@ export default function ResourcesPage() {
           entities. The source office remains responsible for its listing.
           Use the report link on a meeting when available.
         </p>
+        <p>
+          Offices that already publish Meeting Guide JSON can be listed here
+          without scraping a locator: add a{" "}
+          <code>{`<link rel="alternate" type="application/json" title="Meetings Feed">`}</code>{" "}
+          tag, or send the public feed URL from the Feeds admin.
+        </p>
         {supportEmail ? (
           <p>
             For privacy questions, artwork rights, corrections, or takedown

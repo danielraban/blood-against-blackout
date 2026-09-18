@@ -21,6 +21,8 @@ export const feeds = pgTable("feeds", {
   lastOkAt: timestamp("last_ok_at", { withTimezone: true }),
   lastError: text("last_error"),
   meetingCount: integer("meeting_count").notNull().default(0),
+  etag: text("etag"),
+  lastModified: text("last_modified"),
 });
 
 export const entities = pgTable(

@@ -3,8 +3,40 @@ import test from "node:test";
 import {
   canonicalFeedUrl,
   fallbackFeedUrls,
+  feedIdsToReplaceForCatalog,
   isProbablyJson,
+  tsmlCandidateUrls,
 } from "./feed-url";
+
+test("catalog seeding replaces discovered ids that already own a feed URL", () => {
+  const url = "https://oc-aa.org/wp-admin/admin-ajax.php?action=meetings";
+  assert.deepEqual(
+    feedIdsToReplaceForCatalog(
+      [{ id: "oc-aa", url }],
+      [{ id: "oc-aa-org", url }],
+    ),
+    ["oc-aa-org"],
+  );
+  assert.deepEqual(
+    feedIdsToReplaceForCatalog(
+      [{ id: "oc-aa", url }],
+      [
+        {
+          id: "www-oc-aa-org",
+          url: "https://www.oc-aa.org/wp-admin/admin-ajax.php?action=meetings",
+        },
+      ],
+    ),
+    ["www-oc-aa-org"],
+  );
+  assert.deepEqual(
+    feedIdsToReplaceForCatalog(
+      [{ id: "oc-aa", url }],
+      [{ id: "oc-aa", url }],
+    ),
+    [],
+  );
+});
 
 test("canonical feed URLs drop www and trailing slashes", () => {
   assert.equal(
@@ -18,6 +50,13 @@ test("WordPress feeds get JSON fallbacks", () => {
     "https://aasfmarin.org/wp-admin/admin-ajax.php?action=meetings",
   );
   assert.ok(fallbacks.some((url) => url.includes("/wp-json/tsml/v1/meetings")));
+  assert.ok(fallbacks.some((url) => url.includes("tsml-feed=1")));
+});
+
+test("TSML candidate URLs cover Meeting Guide and plugin paths", () => {
+  const urls = tsmlCandidateUrls("aasanjose.org");
+  assert.ok(urls.some((url) => url.includes("/wp-json/tsml/v1/meetings")));
+  assert.ok(urls.some((url) => url.includes("/api/meetingguide")));
 });
 
 test("HTML bodies are not treated as JSON", () => {

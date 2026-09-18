@@ -188,7 +188,7 @@
   {
     "id": "honolulu",
     "name": "Hawaii",
-    "url": "https://oahucentraloffice.com/wp-admin/admin-ajax.php?action=meetings",
+    "url": "https://oahuaa.org/wp-admin/admin-ajax.php?action=meetings",
     "regionHint": "US-HI"
   },
   {
@@ -212,7 +212,7 @@
   {
     "id": "london-uk",
     "name": "London AA",
-    "url": "https://aa-london.com/api/meetingguide/",
+    "url": "https://aa-london.com/api/meetingguide",
     "regionHint": "GB-LON",
     "fellowship": "aa",
     "format": "tsml"
@@ -302,60 +302,20 @@
     "regionHint": "US-CA"
   },
   {
-    "id": "na-ireland",
-    "name": "NA Ireland / Northern Ireland",
-    "url": "https://bmlt.nasouth.ie/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "IE",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-newyork",
-    "name": "NA Greater New York",
-    "url": "https://bmlt.newyorkna.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-NY",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-socal",
-    "name": "NA Southern California",
-    "url": "https://todayna.org/bmlt/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-CA",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-sanjose",
-    "name": "NA San Jose",
-    "url": "https://sjna.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-CA",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-canada",
-    "name": "NA Canadian Assembly",
-    "url": "https://canaacna.org/meetings/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "CA",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-uk-london",
-    "name": "NA near London (BMLT aggregator)",
-    "url": "https://aggregator.bmltenabled.org/main_server/client_interface/json/?switcher=GetSearchResults&lat_val=51.5074&long_val=-0.1278&geo_width_km=50",
-    "regionHint": "GB-LON",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
     "id": "na-virtual",
     "name": "NA virtual worldwide",
     "url": "https://aggregator.bmltenabled.org/main_server/client_interface/json/?switcher=GetSearchResults&venue_types=2",
     "regionHint": "ONLINE",
     "fellowship": "na",
     "format": "bmlt"
+  },
+  {
+    "id": "ca-georgia",
+    "name": "Georgia Area Cocaine Anonymous",
+    "url": "https://georgiaca.org/wp-admin/admin-ajax.php?action=meetings",
+    "regionHint": "US-GA",
+    "fellowship": "ca",
+    "format": "tsml"
   },
   {
     "id": "ca-losangeles",
@@ -366,407 +326,71 @@
     "format": "tsml"
   },
   {
-    "id": "na-germany",
-    "name": "NA German-Speaking Region",
-    "url": "https://www.narcotics-anonymous.de/bmlt/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "DE",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-ohio",
-    "name": "NA Ohio",
-    "url": "https://bmlt.naohio.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-OH",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-nz",
-    "name": "NA Aotearoa New Zealand",
-    "url": "https://bmlt.nzna.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "NZ",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-india",
-    "name": "NA India",
-    "url": "https://naindia.in/meeting_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "IN",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-connecticut",
-    "name": "NA Connecticut",
-    "url": "https://bmlt.ctna.org/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-CT",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-hawaii",
-    "name": "NA Hawaii",
-    "url": "https://na-hawaii.org/bmltmain/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-HI",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-newjersey",
-    "name": "NA New Jersey",
-    "url": "https://bmlt.nanj.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-NJ",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-txla",
-    "name": "NA Texas Louisiana Mississippi Arkansas",
-    "url": "https://texasoklahomana.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-tennessee",
-    "name": "NA Volunteer Region",
-    "url": "https://natennessee.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-TN",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-colorado",
-    "name": "NA Colorado",
-    "url": "https://nacolorado.org/meetingList/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-CO",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-italia",
-    "name": "NA Italia",
-    "url": "https://na-italia.info/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "IT",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-michigan",
-    "name": "NA Michigan",
-    "url": "https://michigan-na.org/bmlt/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-MI",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-denmark",
-    "name": "NA Denmark",
-    "url": "https://www.nadanmark.dk/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "DK",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-minnesota",
-    "name": "NA Minnesota",
-    "url": "https://bmlt.naminnesota.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-MN",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-newengland",
-    "name": "NA New England",
-    "url": "https://www.nerna.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-NE",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-australia",
-    "name": "NA Australia",
-    "url": "https://www.na.org.au/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "AU",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-france",
-    "name": "NA France",
-    "url": "https://bmlt.narcotiquesanonymes.org/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "FR",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-kentucky",
-    "name": "NA Kentucky",
-    "url": "https://bmlt.bmltky.online/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-KY",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-missouri",
-    "name": "NA Show-Me Region",
-    "url": "https://missourina.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-MO",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-poland",
-    "name": "NA Polish Region",
-    "url": "https://bmltadmin.anonimowinarkomani.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "PL",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-illinois",
-    "name": "NA Greater Illinois",
-    "url": "https://girbmlt.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-IL",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-plains",
-    "name": "NA Plains States",
-    "url": "https://pszfna.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-tristate",
-    "name": "NA Tri-State Region",
-    "url": "https://tsrscna.org/bmlt_dev/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-autonomy",
-    "name": "NA Autonomy Zone",
-    "url": "https://metrorichna.org/BMLT/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-switzerland",
-    "name": "NA Switzerland",
-    "url": "https://bmlt.narcotics-anonymous.ch/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "CH",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-greece",
-    "name": "NA Greece",
-    "url": "https://bmlt.na-greece.gr/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "GR",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-montana",
-    "name": "NA Montana",
-    "url": "https://bmlt.namontana.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-MT",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-paraguay",
-    "name": "NA Paraguay",
-    "url": "https://www.na.org.py/bmlt/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "PY",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-chicago",
-    "name": "NA Chicagoland",
-    "url": "https://bmlt.chicagona.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US-IL",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-brazil",
-    "name": "NA Brazilian Zonal Forum",
-    "url": "https://bmlt.na.org.br/ativo/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "BR",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-sezf",
-    "name": "NA Southeastern Zonal Forum",
-    "url": "https://bmlt.sezf.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "na-western",
-    "name": "NA Western States",
-    "url": "https://bmlt.wszf.org/main_server/client_interface/json/?switcher=GetSearchResults",
-    "regionHint": "US",
-    "fellowship": "na",
-    "format": "bmlt"
-  },
-  {
-    "id": "www-aa-london-com",
-    "name": "aa-london.com",
-    "url": "https://www.aa-london.com/api/meetingguide/",
-    "regionHint": "GB",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "www-aa-london-com",
-    "name": "aa-london.com",
-    "url": "https://www.aa-london.com/api/meetingguide.json",
-    "regionHint": "GB",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "oc-aa-org",
-    "name": "oc-aa.org",
-    "url": "https://oc-aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "www-oc-aa-org",
-    "name": "oc-aa.org",
-    "url": "https://www.oc-aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "aamonterey-org",
-    "name": "aamonterey.org",
-    "url": "https://aamonterey.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
     "id": "memphis-aa-org",
-    "name": "memphis-aa.org",
+    "name": "Memphis AA",
     "url": "https://memphis-aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "regionHint": "US-TN"
   },
   {
-    "id": "aavt-org",
-    "name": "aavt.org",
+    "id": "oc-aa",
+    "name": "Orange County",
+    "url": "https://oc-aa.org/wp-admin/admin-ajax.php?action=meetings",
+    "regionHint": "US-CA"
+  },
+  {
+    "id": "aamonterey",
+    "name": "Monterey",
+    "url": "https://aamonterey.org/wp-admin/admin-ajax.php?action=meetings",
+    "regionHint": "US-CA"
+  },
+  {
+    "id": "aavt",
+    "name": "Vermont",
     "url": "https://aavt.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "regionHint": "US-VT"
   },
   {
-    "id": "www-aa-org-nz",
-    "name": "aa.org.nz",
-    "url": "https://www.aa.org.nz/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "NZ",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "www-ct-aa-org",
-    "name": "ct-aa.org",
-    "url": "https://www.ct-aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "southwesternindianaaa-org",
-    "name": "southwesternindianaaa.org",
+    "id": "southwesternindiana",
+    "name": "Southwestern Indiana",
     "url": "https://southwesternindianaaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "regionHint": "US-IN"
   },
   {
-    "id": "area74-org",
-    "name": "area74.org",
+    "id": "area74",
+    "name": "Area 74",
     "url": "https://area74.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "regionHint": "US"
   },
   {
-    "id": "www-area74-org",
-    "name": "area74.org",
-    "url": "https://www.area74.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "aavirginia-org",
-    "name": "aavirginia.org",
+    "id": "aavirginia",
+    "name": "Virginia",
     "url": "https://aavirginia.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "regionHint": "US-VA"
   },
   {
-    "id": "www-aavirginia-org",
-    "name": "aavirginia.org",
-    "url": "https://www.aavirginia.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "area78aa-org",
-    "name": "area78aa.org",
+    "id": "area78aa",
+    "name": "Area 78",
     "url": "https://area78aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "regionHint": "US"
   },
   {
-    "id": "www-area78-org",
-    "name": "area78.org",
-    "url": "https://www.area78.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
+    "id": "oiaa-online",
+    "name": "Online Intergroup of A.A.",
+    "url": "https://central-query.apps.code4recovery.org/api/v1/meetings",
+    "regionHint": "ONLINE",
     "fellowship": "aa",
-    "format": "tsml"
+    "format": "oiaa"
   },
   {
-    "id": "www-aamonterey-org",
-    "name": "aamonterey.org",
-    "url": "https://www.aamonterey.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
+    "id": "na-czechoslovakia",
+    "name": "NA Czechoslovakia",
+    "url": "https://bmlt.eu/eu/main_server/client_interface/json/?switcher=GetSearchResults",
+    "regionHint": "CZ",
+    "fellowship": "na",
+    "format": "bmlt"
   },
   {
-    "id": "www-memphis-aa-org",
-    "name": "memphis-aa.org",
-    "url": "https://www.memphis-aa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US",
-    "fellowship": "aa",
-    "format": "tsml"
-  },
-  {
-    "id": "aa-london-com",
+    "id": "aa-london-com-2",
     "name": "aa-london.com",
     "url": "https://aa-london.com/api/meetingguide.json",
     "regionHint": "GB",

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { cities, feeds, meetings } from "@/lib/schema";
+import { freshFeedPredicate, isSourceFresh, safeMeetingPredicate } from "@/lib/verification";
 
 export async function GET() {
   const db = getDb();
   try {
-    const [feedRows, cityRows, geoRows] = await Promise.all([
+    const [feedRows, cityRows, geoRows, meetingTotal, feedTotals] = await Promise.all([
       db.select().from(feeds),
       db
         .select()
@@ -21,13 +22,38 @@ export async function GET() {
           lng: sql<number>`avg(${meetings.lng})::float`,
         })
         .from(meetings)
-        .where(sql`${meetings.geohash4} is not null`)
+        .innerJoin(feeds, eq(meetings.feedId, feeds.id))
+        .where(and(freshFeedPredicate(), sql`${meetings.geohash4} is not null`))
         .groupBy(meetings.geohash4)
         .orderBy(sql`count(*) desc`)
         .limit(400),
+      db
+        .select({ count: count() })
+        .from(meetings)
+        .innerJoin(feeds, eq(meetings.feedId, feeds.id))
+        .where(and(freshFeedPredicate(), safeMeetingPredicate())),
+      db
+        .select({
+          status: feeds.status,
+          count: count(),
+        })
+        .from(feeds)
+        .groupBy(feeds.status),
     ]);
+    const freshFeeds = feedRows.filter((feed) =>
+      isSourceFresh(feed.status, feed.lastOkAt),
+    );
+    const enabledFeeds = feedRows.filter((feed) => feed.status !== "disabled");
     return NextResponse.json(
       {
+        totals: {
+          freshWeeklyOccurrences: meetingTotal[0]?.count ?? 0,
+          freshFeedCount: freshFeeds.length,
+          enabledFeedCount: enabledFeeds.length,
+          catalogFeedCount: feedRows.length,
+          meetingGuideEntities: 500,
+          meetingGuideWeeklyMeetings: 150000,
+        },
         feeds: feedRows.map((f) => ({
           id: f.id,
           name: f.name,
@@ -39,6 +65,7 @@ export async function GET() {
         })),
         cities: cityRows,
         cells: geoRows,
+        feedStatus: Object.fromEntries(feedTotals.map((row) => [row.status, row.count])),
       },
       {
         headers: {

@@ -1,4 +1,4 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "./db";
 import { cities, entities, feeds, geocodeCache, ingestRuns, meetings } from "./schema";
@@ -20,10 +20,12 @@ import {
   canonicalFeedUrl,
   DUPLICATE_FEED_IDS,
   fallbackFeedUrls,
+  feedIdsToReplaceForCatalog,
   isProbablyJson,
 } from "./feed-url";
 import { applyRegionHint, isUsableCityLabel, locationNeedsEnrichment, normalizePlaceFields } from "./location";
 import { SOURCE_FRESHNESS_HOURS } from "./verification";
+import { sortFeedsStaleFirst } from "./ingest-queue";
 import {
   canUseAiCanonicalization,
   enrichPlace,
@@ -61,11 +63,29 @@ const FEED_USER_AGENTS = [
   "Mozilla/5.0 (compatible; MeetingGuide; OpenChair)",
 ];
 
-async function readMeetingJson(url: string) {
+export const DEFAULT_INGEST_LIMIT = 20;
+export const MAX_INGEST_LIMIT = 32;
+export const INGEST_TIME_BUDGET_MS = 240_000;
+
+type FeedPayload =
+  | { status: "not-modified" }
+  | {
+      status: "ok";
+      meetings: RawMeeting[];
+      etag: string | null;
+      lastModified: string | null;
+    };
+
+type ConditionalHeaders = {
+  etag?: string | null;
+  lastModified?: string | null;
+};
+
+async function readMeetingJson(url: string, validators?: ConditionalHeaders) {
   let lastError: Error = new Error("Feed fetch failed");
   for (const userAgent of FEED_USER_AGENTS) {
     try {
-      return await readMeetingJsonWithAgent(url, userAgent);
+      return await readMeetingJsonWithAgent(url, userAgent, validators);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Feed fetch failed");
     }
@@ -73,18 +93,28 @@ async function readMeetingJson(url: string) {
   throw lastError;
 }
 
-async function readMeetingJsonWithAgent(url: string, userAgent: string) {
+async function readMeetingJsonWithAgent(
+  url: string,
+  userAgent: string,
+  validators?: ConditionalHeaders,
+): Promise<FeedPayload> {
   let current = await assertPublicHttpsUrl(url);
   for (let redirects = 0; redirects <= 3; redirects += 1) {
+    const headers: Record<string, string> = {
+      Accept: "application/json, text/javascript, */*",
+      "User-Agent": userAgent,
+    };
+    if (validators?.etag) headers["If-None-Match"] = validators.etag;
+    if (validators?.lastModified) headers["If-Modified-Since"] = validators.lastModified;
     const response = await fetch(current, {
-      headers: {
-        Accept: "application/json, text/javascript, */*",
-        "User-Agent": userAgent,
-      },
+      headers,
       cache: "no-store",
       redirect: "manual",
       signal: AbortSignal.timeout(60_000),
     });
+    if (response.status === 304) {
+      return { status: "not-modified" };
+    }
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
       if (!location || redirects === 3) throw new Error("Unsafe or excessive feed redirects");
@@ -99,24 +129,34 @@ async function readMeetingJsonWithAgent(url: string, userAgent: string) {
       throw new Error("Feed did not return JSON");
     }
     try {
-      return asMeetingArray(JSON.parse(body));
-    } catch {
+      return {
+        status: "ok",
+        meetings: asMeetingArray(JSON.parse(body)),
+        etag: response.headers.get("etag"),
+        lastModified: response.headers.get("last-modified"),
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message === "Feed is not a JSON array") throw error;
       throw new Error("Feed did not return JSON");
     }
   }
   throw new Error("Feed redirect failed");
 }
 
-async function fetchJson(url: string) {
+async function fetchJson(
+  url: string,
+  validators?: ConditionalHeaders,
+  useFallbacks = true,
+) {
   const tried = new Set<string>();
-  const candidates = [url, ...fallbackFeedUrls(url)];
+  const candidates = useFallbacks ? [url, ...fallbackFeedUrls(url)] : [url];
   let lastError: Error | null = null;
-  for (const candidate of candidates) {
+  for (const [index, candidate] of candidates.entries()) {
     const key = canonicalFeedUrl(candidate);
     if (tried.has(key)) continue;
     tried.add(key);
     try {
-      return await readMeetingJson(candidate);
+      return await readMeetingJson(candidate, index === 0 ? validators : undefined);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Feed fetch failed");
     }
@@ -159,19 +199,33 @@ async function geocodeAddress(query: string) {
 
 export async function seedFeedCatalog() {
   const db = getDb();
-  if (DUPLICATE_FEED_IDS.length) {
-    for (const id of DUPLICATE_FEED_IDS) {
-      await db
-        .update(feeds)
-        .set({
-          status: "disabled",
-          lastError: "Duplicate of a canonical feed URL",
-          url: `https://disabled.invalid/${id}`,
-        })
-        .where(eq(feeds.id, id));
-    }
-  }
+  const existing = await db.select({ id: feeds.id, url: feeds.url }).from(feeds);
+  const catalog: { id: string; url: string }[] = [];
   const seenUrls = new Set<string>();
+  for (const feed of seedFeeds) {
+    const url = canonicalFeedUrl(feed.url);
+    if (seenUrls.has(url)) continue;
+    seenUrls.add(url);
+    catalog.push({ id: feed.id, url });
+  }
+  for (const server of bmltServers) {
+    const url = canonicalFeedUrl(bmltSearchUrl(server.url));
+    if (seenUrls.has(url)) continue;
+    seenUrls.add(url);
+    catalog.push({ id: server.id, url });
+  }
+  const replaceIds = [
+    ...new Set([
+      ...feedIdsToReplaceForCatalog(catalog, existing),
+      ...DUPLICATE_FEED_IDS.filter(
+        (id) => !catalog.some((row) => row.id === id),
+      ),
+    ]),
+  ];
+  if (replaceIds.length) {
+    await db.delete(feeds).where(inArray(feeds.id, replaceIds));
+  }
+  seenUrls.clear();
   for (const feed of seedFeeds) {
     const url = canonicalFeedUrl(feed.url);
     if (seenUrls.has(url)) continue;
@@ -199,7 +253,10 @@ export async function seedFeedCatalog() {
           format: asFeedFormat(feed.format),
           ...(status === "disabled"
             ? { status, lastError: "No public JSON feed" }
-            : {}),
+            : {
+                status: sql`case when ${feeds.status} = 'disabled' then 'pending' else ${feeds.status} end`,
+                lastError: sql`case when ${feeds.status} = 'disabled' then null else ${feeds.lastError} end`,
+              }),
         },
       });
   }
@@ -230,7 +287,10 @@ export async function seedFeedCatalog() {
           format: "bmlt",
           ...(status === "disabled"
             ? { status, lastError: "No public JSON feed" }
-            : {}),
+            : {
+                status: sql`case when ${feeds.status} = 'disabled' then 'pending' else ${feeds.status} end`,
+                lastError: sql`case when ${feeds.status} = 'disabled' then null else ${feeds.lastError} end`,
+              }),
         },
       });
   }
@@ -409,10 +469,14 @@ async function rebuildCities() {
   ]);
 }
 
-export async function ingestAllFeeds(options: { limit?: number } = {}) {
+export async function ingestAllFeeds(
+  options: { limit?: number; maxMs?: number } = {},
+) {
   const db = getDb();
   await seedFeedCatalog();
   const startedAt = new Date();
+  const deadline =
+    options.maxMs != null ? Date.now() + options.maxMs : Number.POSITIVE_INFINITY;
   await db
     .update(ingestRuns)
     .set({ status: "incomplete", finishedAt: new Date() })
@@ -428,18 +492,16 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
     .returning({ id: ingestRuns.id });
   const runId = insertedRuns[0]?.id;
 
-  const enabledFeeds = (await db.select().from(feeds))
-    .filter((feed) => feed.status !== "disabled")
-    .sort(
-      (left, right) =>
-        (left.lastAttemptAt?.getTime() ?? 0) - (right.lastAttemptAt?.getTime() ?? 0),
-    );
+  const enabledFeeds = sortFeedsStaleFirst(
+    (await db.select().from(feeds)).filter((feed) => feed.status !== "disabled"),
+  );
   const allFeeds =
     options.limit && options.limit > 0
       ? enabledFeeds.slice(0, options.limit)
       : enabledFeeds;
   let feedsOk = 0;
   let feedsFail = 0;
+  let feedsNotModified = 0;
   let meetingsUpserted = 0;
   const errors: string[] = [];
   const enrichmentBudget: PlaceEnrichmentBudget = {
@@ -453,11 +515,34 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
   }
 
   for (const feed of allFeeds) {
+    if (Date.now() >= deadline) break;
     const attemptedAt = new Date();
     try {
       const fellowship = asFellowship(feed.fellowship);
       const format = asFeedFormat(feed.format);
-      const raw = await fetchJson(feed.url);
+      const payload = await fetchJson(
+        feed.url,
+        {
+          etag: feed.etag,
+          lastModified: feed.lastModified,
+        },
+        format !== "oiaa",
+      );
+      if (payload.status === "not-modified") {
+        await db
+          .update(feeds)
+          .set({
+            status: "ok",
+            lastAttemptAt: attemptedAt,
+            lastOkAt: attemptedAt,
+            lastError: null,
+          })
+          .where(eq(feeds.id, feed.id));
+        feedsOk += 1;
+        feedsNotModified += 1;
+        continue;
+      }
+      const raw = payload.meetings;
       const parsed = raw
         .flatMap((item) => parseFeedMeetings(item, feed.id, fellowship, format))
         .map((item) => {
@@ -687,6 +772,8 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
             lastOkAt: attemptedAt,
             lastError: null,
             meetingCount: uniqueMeetingRows.length,
+            etag: payload.etag,
+            lastModified: payload.lastModified,
           })
           .where(eq(feeds.id, feed.id)),
       );
@@ -727,6 +814,7 @@ export async function ingestAllFeeds(options: { limit?: number } = {}) {
     feedsProcessed: allFeeds.length,
     feedsOk,
     feedsFail,
+    feedsNotModified,
     meetingsUpserted,
     errors,
   };
