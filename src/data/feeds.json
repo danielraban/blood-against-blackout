@@ -390,6 +390,14 @@
     "format": "bmlt"
   },
   {
+    "id": "ca-georgia",
+    "name": "Georgia Area Cocaine Anonymous",
+    "url": "https://georgiaca.org/wp-admin/admin-ajax.php?action=meetings",
+    "regionHint": "US-GA",
+    "fellowship": "ca",
+    "format": "tsml"
+  },
+  {
     "id": "ca-losangeles",
     "name": "Cocaine Anonymous Los Angeles",
     "url": "https://ca4la.org/wp-admin/admin-ajax.php?action=meetings",

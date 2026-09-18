@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { filterAndGroup } from "./search";
+import { filterAndGroup, weekGroupTitle } from "./search";
 import { DEFAULT_FILTERS, type Meeting } from "./types";
 
 const meeting: Meeting = {
@@ -214,4 +214,42 @@ test("US meetings labeled UTC still use local American wall time", () => {
     ["afternoon"],
   );
   assert.equal(result.groups.later[0]?.slug, "evening");
+});
+
+test("nearby drops online meetings whose coordinates are outside the radius", () => {
+  const result = filterAndGroup(
+    [
+      {
+        ...meeting,
+        slug: "richmond-va",
+        name: "NDANA Policy Subcommittee",
+        city: "Richmond",
+        state: "VA",
+        country: "US",
+        lat: 37.5407,
+        lng: -77.436,
+      },
+      {
+        ...meeting,
+        slug: "london-zoom",
+        name: "Lombard Street @ 6am",
+        city: "London",
+        country: "GB",
+        lat: null,
+        lng: null,
+      },
+    ],
+    { ...DEFAULT_FILTERS, day: "any", week: true },
+    LONDON,
+    WEDNESDAY_20_LONDON,
+  );
+  assert.equal(result.count, 1);
+  assert.equal(result.groups.week[0]?.slug, "london-zoom");
+});
+
+test("week group headings use today instead of a weekday name", () => {
+  assert.equal(weekGroupTitle(0, 5), "today");
+  assert.equal(weekGroupTitle(1, 6), "tomorrow");
+  assert.equal(weekGroupTitle(7, 5), "next fri");
+  assert.equal(weekGroupTitle(3, 1), "mon");
 });

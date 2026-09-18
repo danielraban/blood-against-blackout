@@ -21,6 +21,16 @@ export function weekdayLabel(day: number) {
   return WEEKDAYS[day] ?? "";
 }
 
+export function weekGroupTitle(daysUntil: number | null, day: number | null) {
+  if (daysUntil === 0) return "today";
+  if (daysUntil === 1) return "tomorrow";
+  if (daysUntil === 7 && day != null) {
+    return `next ${weekdayLabel(day).toLowerCase()}`;
+  }
+  if (day != null) return weekdayLabel(day).toLowerCase();
+  return "upcoming";
+}
+
 function venueKey(meeting: Meeting) {
   const named = slugify(meeting.locationName ?? "");
   if (named) return named;
@@ -219,10 +229,7 @@ export function filterAndGroup(
     let distanceKm: number | null = null;
     if (origin && meeting.lat != null && meeting.lng != null) {
       distanceKm = haversineKm(origin.lat, origin.lng, meeting.lat, meeting.lng);
-      if (
-        meeting.attendance !== "online" &&
-        distanceKm > filters.radiusKm
-      ) {
+      if (distanceKm > filters.radiusKm) {
         continue;
       }
     }

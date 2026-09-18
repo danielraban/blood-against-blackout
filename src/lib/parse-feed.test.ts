@@ -219,6 +219,38 @@ test("multi-day meetings keep distinct slugs when the base slug is already 64 ch
   assert.ok(slugs.every((slug) => slug.length <= 64));
 });
 
+test("Georgia CA TSML record infers Dunwoody and keeps CA fellowship", () => {
+  const meeting = parseTsmlMeeting(
+    {
+      id: 38,
+      name: "Spearheads",
+      slug: "spearheads",
+      day: 4,
+      time: "19:00",
+      end_time: "20:00",
+      types: ["O"],
+      location: "Dunwoody Baptist Church room A200",
+      formatted_address: "1445 Mt Vernon Rd, Dunwoody, GA 30338, USA",
+      latitude: 33.9418969,
+      longitude: -84.339516,
+      timezone: "America/New_York",
+      region: "Dunwoody",
+      attendance_option: "in_person",
+      entity: "Georgia Area Cocaine Anonymous",
+    },
+    "ca-georgia",
+    "ca",
+  );
+
+  assert.equal(meeting?.name, "Spearheads");
+  assert.equal(meeting?.fellowship, "ca");
+  assert.equal(meeting?.attendance, "in-person");
+  assert.equal(meeting?.day, 4);
+  assert.equal(meeting?.time, "19:00");
+  assert.equal(meeting?.city, "Dunwoody");
+  assert.equal(meeting?.locationName, "Dunwoody Baptist Church room A200");
+});
+
 test("duplicate feed/slug rows collapse before insert", () => {
   const rows = dedupeMeetingsBySlug([
     { feedId: "london-uk", slug: "same", name: "first" },
