@@ -40,6 +40,9 @@ const meeting: Meeting = {
   feedbackEmails: [],
 };
 
+const LONDON = { lat: 51.5072, lng: -0.1276 };
+const WEDNESDAY_20_LONDON = new Date("2026-09-16T19:00:00.000Z");
+
 function search(query: string) {
   return filterAndGroup(
     [meeting],
