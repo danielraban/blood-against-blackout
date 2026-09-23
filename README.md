@@ -22,11 +22,31 @@ npm run dev
 
 Optional: `npm run sample` loads the bundled San Jose sample into Neon. `npm run discover` probes known intergroup hosts, alternate Meeting Guide JSON paths, homepage `Meetings Feed` links, and A.A. Near You websites for open TSML/BMLT feeds.
 
+## Local vs production database
+
+`.env.local` should point `DATABASE_URL` at the Neon branch `local-daniel` (project `open-chair` / `bold-grass-74782708`). Production cron and ingest write only to `main`.
+
+They stay in sync by **resetting the child branch from `main`**, not by pointing local at production or running ingest twice.
+
+```bash
+# once: npx neonctl auth
+npm run db:sync
+```
+
+That discards local writes and copy-on-writes the current production data (schema + meetings + city index). After a reset you do **not** need `db:migrate` or `ingest` unless you are testing those commands.
+
+Rules that keep this from drifting:
+
+1. Apply schema changes on `main` first (`DATABASE_URL` for production, then `npm run db:migrate`), then `npm run db:sync`.
+2. Run `npm run ingest` locally only when you are testing ingest. It will diverge from production until the next reset.
+3. Never put the `main` connection string in `.env.local`.
+
 ## Scripts
 
 - `npm run dev` — Turbopack
 - `npm run build` — webpack production build
 - `npm run db:migrate` — apply checked-in Drizzle migrations
+- `npm run db:sync` — reset the `local-daniel` Neon branch to production `main`
 - `npm run ingest` — pull public feeds into Neon and rebuild the city index
 - `npm run discover` — probe TSML hosts (including UK intergroups) and add working public feeds
 - `npm run sample` — load the bundled San Jose sample feed (useful when ingest cannot reach the public web)
