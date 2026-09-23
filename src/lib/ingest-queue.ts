@@ -4,10 +4,10 @@ export type IngestQueueFeed = {
 };
 
 export function compareFeedsStaleFirst(left: IngestQueueFeed, right: IngestQueueFeed) {
-  const leftOk = left.lastOkAt?.getTime() ?? 0;
-  const rightOk = right.lastOkAt?.getTime() ?? 0;
-  if (leftOk !== rightOk) return leftOk - rightOk;
-  return (left.lastAttemptAt?.getTime() ?? 0) - (right.lastAttemptAt?.getTime() ?? 0);
+  const leftAttempt = left.lastAttemptAt?.getTime() ?? 0;
+  const rightAttempt = right.lastAttemptAt?.getTime() ?? 0;
+  if (leftAttempt !== rightAttempt) return leftAttempt - rightAttempt;
+  return (left.lastOkAt?.getTime() ?? 0) - (right.lastOkAt?.getTime() ?? 0);
 }
 
 export function sortFeedsStaleFirst<T extends IngestQueueFeed>(feeds: T[]) {

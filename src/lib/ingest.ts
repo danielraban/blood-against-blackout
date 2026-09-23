@@ -296,7 +296,7 @@ export async function seedFeedCatalog() {
   }
 }
 
-async function rebuildCities() {
+export async function rebuildCities() {
   const db = getDb();
   await db.batch([
     db.delete(cities),
