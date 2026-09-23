@@ -8,7 +8,7 @@ Meeting data comes from public [Meeting Guide JSON](https://github.com/code4reco
 
 1. Copy `.env.example` to `.env.local` and set every value. Generate unique 32-byte-or-longer values for `ADMIN_SESSION_SECRET` and `CRON_SECRET`.
 2. `npm install`
-3. `npm run db:migrate` for a new database. Existing pre-migration databases should use `npm run db:push` once, then use migrations going forward.
+3. `npm run db:migrate` for a new or existing database. It uses Neon HTTP (the same driver as ingest) and records already-pushed schema so it does not replay `CREATE TABLE`.
 4. `npm run ingest` (or sign in at `/admin/feeds` and click Run ingest)
 5. `npm run dev`
 
@@ -20,7 +20,26 @@ ulimit -n 10240
 npm run dev
 ```
 
-Optional: `npm run sample` loads the bundled San Jose sample into Neon. `npm run discover` tries known intergroup hosts for open TSML feeds.
+Optional: `npm run sample` loads the bundled San Jose sample into Neon. `npm run discover` probes known intergroup hosts, alternate Meeting Guide JSON paths, homepage `Meetings Feed` links, and A.A. Near You websites for open TSML/BMLT feeds.
+
+## Local vs production database
+
+`.env.local` should point `DATABASE_URL` at the Neon branch `local-daniel` (project `open-chair` / `bold-grass-74782708`). Production cron and ingest write only to `main`.
+
+They stay in sync by **resetting the child branch from `main`**, not by pointing local at production or running ingest twice.
+
+```bash
+# once: npx neonctl auth
+npm run db:sync
+```
+
+That discards local writes and copy-on-writes the current production data (schema + meetings + city index). After a reset you do **not** need `db:migrate` or `ingest` unless you are testing those commands.
+
+Rules that keep this from drifting:
+
+1. Apply schema changes on `main` first (`DATABASE_URL` for production, then `npm run db:migrate`), then `npm run db:sync`.
+2. Run `npm run ingest` locally only when you are testing ingest. It will diverge from production until the next reset.
+3. Never put the `main` connection string in `.env.local`.
 
 ## Scripts
 
@@ -33,11 +52,12 @@ Optional: `npm run sample` loads the bundled San Jose sample into Neon. `npm run
 - `npm run check` — the local CI gate: lint, typecheck, unit tests, and build
 - `npm run audit` — validate meeting data quality against the configured database
 - `npm run db:migrate` — apply checked-in Drizzle migrations
+- `npm run db:sync` — reset the `local-daniel` Neon branch to production `main`
 - `npm run ingest` — pull public feeds into Neon and rebuild the city index
 - `npm run discover` — probe TSML hosts (including UK intergroups) and add working public feeds
 - `npm run sample` — load the bundled San Jose sample feed (useful when ingest cannot reach the public web)
 
-There is no single national AA feed. blood against blackout uses the same public Meeting Guide / TSML JSON endpoints local offices publish. The UK General Service Office meeting finder is not a public TSML feed; UK coverage comes from intergroups and the Continental European Region when those feeds are open.
+There is no single national AA feed. blood against blackout uses the same public Meeting Guide / TSML JSON endpoints local offices publish, plus public BMLT root servers for N.A. and the Online Intergroup of A.A. query API for worldwide online A.A. The UK General Service Office meeting finder is not a public TSML feed; UK coverage comes from intergroups and the Continental European Region when those feeds are open.
 
 ## Vercel production
 
@@ -46,7 +66,7 @@ There is no single national AA feed. blood against blackout uses the same public
 3. Set `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS origin and redeploy.
 4. Run `npm run db:migrate`, then `npm run ingest`, against the production Neon branch.
 5. Deploy a preview and verify `/api/health` returns `{"ok":true}`.
-6. Promote the verified preview. `vercel.json` runs a bounded nightly ingest; Vercel sends `CRON_SECRET` as its bearer token.
+6. Promote the verified preview. `vercel.json` runs a bounded ingest every 15 minutes, oldest feeds first; Vercel sends `CRON_SECRET` as its bearer token.
 
 Never commit `.env.local`. The admin cookie is signed and expires after seven days. Opening the optional map sends the visible map area and standard request metadata to OpenFreeMap.
 

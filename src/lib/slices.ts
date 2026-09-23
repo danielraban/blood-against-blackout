@@ -5,6 +5,7 @@ import { neighborGeohashes } from "./geo";
 import type { Meeting, SlicePayload } from "./types";
 import { asFellowship } from "./fellowship";
 import { collapseDuplicateMeetings } from "./search";
+import { meetingBelongsToSlice, sliceAreaFromCities } from "./slice-area";
 import { freshFeedPredicate, safeMeetingPredicate } from "./verification";
 
 function toMeeting(
@@ -54,9 +55,15 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
   const db = getDb();
   const neighbors = neighborGeohashes(geohash);
   const localCities = await db
-    .select({ label: cities.label, parentLabel: cities.parentLabel })
+    .select({
+      label: cities.label,
+      parentLabel: cities.parentLabel,
+      state: cities.state,
+      country: cities.country,
+    })
     .from(cities)
     .where(inArray(cities.geohash4, neighbors));
+  const area = sliceAreaFromCities(localCities, neighbors);
   const cityLabels = [
     ...new Set(
       localCities
@@ -104,13 +111,15 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
     neighbors,
     fetchedAt: new Date().toISOString(),
     meetings: collapseDuplicateMeetings(
-      rows.map(({ meeting, feed }) =>
-        toMeeting(
-          meeting,
-          meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
-          feed,
-        ),
-      ),
+      rows
+        .map(({ meeting, feed }) =>
+          toMeeting(
+            meeting,
+            meeting.entityId ? entityMap.get(meeting.entityId) : undefined,
+            feed,
+          ),
+        )
+        .filter((meeting) => meetingBelongsToSlice(meeting, area)),
     ),
     sourceFeeds: feedRows.map((f) => ({ id: f.id, name: f.name })),
   };

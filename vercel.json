@@ -1,9 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["lhr1"],
   "crons": [
     {
-      "path": "/api/cron/ingest?limit=8",
-      "schedule": "17 * * * *"
+      "path": "/api/cron/ingest?limit=20",
+      "schedule": "7,22,37,52 * * * *"
     }
   ]
 }

@@ -20,10 +20,12 @@ import {
   filterAndGroup,
   type RankedMeeting,
   weekdayLabel,
+  weekGroupTitle,
 } from "@/lib/search";
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
 import { ComicStrip } from "@/components/comic-strip";
+import { OfficialLocators } from "@/components/official-locators";
 import { cn } from "@/lib/utils";
 import { Map, SlidersHorizontal, X } from "lucide-react";
 
@@ -91,8 +93,13 @@ export function Finder({
     const cached = await readSlice(hash);
     if (cached?.slice) {
       setSlice(cached.slice);
-      if (cached.stale) setOfflineNote(`Cached list from ${new Date(cached.slice.fetchedAt).toLocaleString()}`);
-      else setOfflineNote(`Times as of ${new Date(cached.slice.fetchedAt).toLocaleTimeString()}`);
+      if (cached.stale) {
+        setOfflineNote(
+          `Cached list from ${new Date(cached.slice.fetchedAt).toLocaleString()}`,
+        );
+      } else {
+        setOfflineNote(null);
+      }
     }
     try {
       const response = await fetch(`/api/slices/${hash}`);
@@ -100,7 +107,7 @@ export function Finder({
       const data = (await response.json()) as SlicePayload;
       setSlice(data);
       await writeSlice(data);
-      setOfflineNote(`Times as of ${new Date(data.fetchedAt).toLocaleTimeString()}`);
+      setOfflineNote(null);
       setStatus(
         data.meetings.length
           ? `${data.meetings.length} listings in this area`
@@ -432,27 +439,29 @@ export function Finder({
               use my location
             </Button>
           </div>
-          <p id="location-status" className="text-sm text-muted">
-            {selectedCity
-              ? `${selectedCity.label} · ${status}`
-              : geohash
-                ? `current area · ${status}`
-                : status}
-          </p>
-          {origin ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-                <button className="underline" onClick={() => void savePlace({ kind: "home", label: selectedCity?.label ?? "Home", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                  save as home
-                </button>
-                <button className="underline" onClick={() => void savePlace({ kind: "work", label: selectedCity?.label ?? "Work", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                  save as work
-                </button>
-                <button className="underline" onClick={() => void savePlace({ kind: "travel", label: selectedCity?.label ?? "Travel", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                  save as travel
-                </button>
-            </div>
-          ) : null}
-          {offlineNote ? <p className="text-sm text-muted">{offlineNote}</p> : null}
+          <div className="space-y-2 border-2 border-black bg-background/95 p-3 backdrop-blur-sm">
+            <p id="location-status" className="text-sm text-muted">
+              {selectedCity
+                ? `${selectedCity.label} · ${status}`
+                : geohash
+                  ? `current area · ${status}`
+                  : status}
+            </p>
+            {origin ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                  <button className="underline" onClick={() => void savePlace({ kind: "home", label: selectedCity?.label ?? "Home", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
+                    save as home
+                  </button>
+                  <button className="underline" onClick={() => void savePlace({ kind: "work", label: selectedCity?.label ?? "Work", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
+                    save as work
+                  </button>
+                  <button className="underline" onClick={() => void savePlace({ kind: "travel", label: selectedCity?.label ?? "Travel", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
+                    save as travel
+                  </button>
+              </div>
+            ) : null}
+            {offlineNote ? <p className="text-sm text-muted">{offlineNote}</p> : null}
+          </div>
         </section>
       ) : (
         <section>
@@ -846,15 +855,8 @@ function WeekGroups({ items }: { items: RankedMeeting[] }) {
       {[...byDay.entries()]
         .sort(([a], [b]) => (a ?? 99) - (b ?? 99))
         .map(([daysUntil, meetings]) => {
-          const day = meetings[0]?.nextDay;
-          const title =
-            daysUntil === 1
-              ? "tomorrow"
-              : daysUntil === 7 && day != null
-                ? `next ${weekdayLabel(day).toLowerCase()}`
-                : day != null
-                  ? weekdayLabel(day).toLowerCase()
-                  : "upcoming";
+          const day = meetings[0]?.nextDay ?? null;
+          const title = weekGroupTitle(daysUntil, day);
           return (
             <Group
               key={daysUntil ?? "unscheduled"}
@@ -875,25 +877,9 @@ function EmptyCoverage({ city }: { city?: string }) {
           ? `No public feed covers ${city} yet.`
           : "No public feed covers this area yet."}
       </p>
+      <OfficialLocators intro="A missing city usually means the local office has not published Meeting Guide, TSML, or BMLT JSON — not that there are no meetings." />
       <p className="text-muted">
-        Local offices publish public Meeting Guide, TSML, or BMLT JSON.
-        If your intergroup has a public feed, it can be added on the Feeds page.
         Meanwhile, online meetings still work worldwide.
-      </p>
-      <p className="text-sm text-muted">
-        UK A.A. national listings live on{" "}
-        <a className="underline" href="https://www.alcoholics-anonymous.org.uk/AA-Meetings/Find-a-Meeting">
-          alcoholics-anonymous.org.uk
-        </a>
-        . UK NA is at{" "}
-        <a className="underline" href="https://www.ukna.org">
-          ukna.org
-        </a>
-        . UK CA is at{" "}
-        <a className="underline" href="https://meetings.cocaineanonymous.org.uk/meetings/">
-          meetings.cocaineanonymous.org.uk
-        </a>
-        .
       </p>
       <div className="flex gap-2">
         <a href="/online">

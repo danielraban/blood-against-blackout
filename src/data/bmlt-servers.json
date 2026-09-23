@@ -2,11 +2,15 @@
   {"id": "na-nz", "name": "NA Aotearoa New Zealand", "url": "https://bmlt.nzna.org/main_server/", "regionHint": "NZ"},
   {"id": "na-txla", "name": "NA Texas Louisiana Mississippi Arkansas", "url": "https://texasoklahomana.org/main_server/", "regionHint": "US"},
   {"id": "na-autonomy", "name": "NA Autonomy Zone", "url": "https://metrorichna.org/BMLT/main_server/", "regionHint": "US"},
+  {"id": "na-newyork", "name": "NA Greater New York", "url": "https://bmlt.newyorkna.org/main_server/", "regionHint": "US-NY"},
+  {"id": "na-socal", "name": "NA Southern California", "url": "https://todayna.org/bmlt/", "regionHint": "US-CA"},
   {"id": "na-philadelphia", "name": "NA Greater Philadelphia", "url": "https://meetings.naworks.org/main_server/", "regionHint": "US-PA"},
   {"id": "na-ohio", "name": "NA Ohio", "url": "https://bmlt.naohio.org/main_server/", "regionHint": "US-OH"},
   {"id": "na-india", "name": "NA India", "url": "https://naindia.in/meeting_server/", "regionHint": "IN"},
   {"id": "na-germany", "name": "NA German-Speaking Region", "url": "https://www.narcotics-anonymous.de/bmlt/", "regionHint": "DE"},
+  {"id": "na-ireland", "name": "NA Ireland / Northern Ireland", "url": "https://bmlt.nasouth.ie/main_server/", "regionHint": "IE"},
   {"id": "na-hawaii", "name": "NA Hawaii", "url": "https://na-hawaii.org/bmltmain/", "regionHint": "US-HI"},
+  {"id": "na-sanjose", "name": "NA San Jose", "url": "https://sjna.org/main_server/", "regionHint": "US-CA"},
   {"id": "na-wisconsin", "name": "NA Wisconsin", "url": "https://bmlt.wisconsinna.org/main_server/", "regionHint": "US-WI"},
   {"id": "na-newjersey", "name": "NA New Jersey", "url": "https://bmlt.nanj.org/main_server/", "regionHint": "US-NJ"},
   {"id": "na-connecticut", "name": "NA Connecticut", "url": "https://bmlt.ctna.org/", "regionHint": "US-CT"},
@@ -23,6 +27,7 @@
   {"id": "na-kentucky", "name": "NA Kentucky", "url": "https://bmlt.bmltky.online/main_server/", "regionHint": "US-KY"},
   {"id": "na-plains", "name": "NA Plains States", "url": "https://pszfna.org/main_server/", "regionHint": "US"},
   {"id": "na-france", "name": "NA France", "url": "https://bmlt.narcotiquesanonymes.org/", "regionHint": "FR"},
+  {"id": "na-canada", "name": "NA Canadian Assembly", "url": "https://canaacna.org/meetings/main_server/", "regionHint": "CA"},
   {"id": "na-brazil", "name": "NA Brazilian Zonal Forum", "url": "https://bmlt.na.org.br/ativo/main_server/", "regionHint": "BR"},
   {"id": "na-illinois", "name": "NA Greater Illinois", "url": "https://girbmlt.org/main_server/", "regionHint": "US-IL"},
   {"id": "na-poland", "name": "NA Polish Region", "url": "https://bmltadmin.anonimowinarkomani.org/main_server/", "regionHint": "PL"},
@@ -33,5 +38,7 @@
   {"id": "na-switzerland", "name": "NA Switzerland", "url": "https://bmlt.narcotics-anonymous.ch/main_server/", "regionHint": "CH"},
   {"id": "na-chicago", "name": "NA Chicagoland", "url": "https://bmlt.chicagona.org/main_server/", "regionHint": "US-IL"},
   {"id": "na-paraguay", "name": "NA Paraguay", "url": "https://www.na.org.py/bmlt/", "regionHint": "PY"},
-  {"id": "na-greece", "name": "NA Greece", "url": "https://bmlt.na-greece.gr/main_server/", "regionHint": "GR"}
+  {"id": "na-iran", "name": "NA Iran", "url": "https://bmlt.nairan3.org/main_server/", "regionHint": "IR"},
+  {"id": "na-greece", "name": "NA Greece", "url": "https://bmlt.na-greece.gr/main_server/", "regionHint": "GR"},
+  {"id": "na-czechoslovakia", "name": "NA Czechoslovakia", "url": "https://bmlt.eu/eu/main_server/", "regionHint": "CZ"}
 ]

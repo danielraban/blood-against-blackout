@@ -6,6 +6,7 @@ import {
   parseTsmlMeeting,
   dedupeMeetingsBySlug,
   uniqueDaySlug,
+  parseOiaaMeeting,
 } from "./parse-feed";
 
 test("TSML region is not incorrectly used as the city", () => {
@@ -219,6 +220,38 @@ test("multi-day meetings keep distinct slugs when the base slug is already 64 ch
   assert.ok(slugs.every((slug) => slug.length <= 64));
 });
 
+test("Georgia CA TSML record infers Dunwoody and keeps CA fellowship", () => {
+  const meeting = parseTsmlMeeting(
+    {
+      id: 38,
+      name: "Spearheads",
+      slug: "spearheads",
+      day: 4,
+      time: "19:00",
+      end_time: "20:00",
+      types: ["O"],
+      location: "Dunwoody Baptist Church room A200",
+      formatted_address: "1445 Mt Vernon Rd, Dunwoody, GA 30338, USA",
+      latitude: 33.9418969,
+      longitude: -84.339516,
+      timezone: "America/New_York",
+      region: "Dunwoody",
+      attendance_option: "in_person",
+      entity: "Georgia Area Cocaine Anonymous",
+    },
+    "ca-georgia",
+    "ca",
+  );
+
+  assert.equal(meeting?.name, "Spearheads");
+  assert.equal(meeting?.fellowship, "ca");
+  assert.equal(meeting?.attendance, "in-person");
+  assert.equal(meeting?.day, 4);
+  assert.equal(meeting?.time, "19:00");
+  assert.equal(meeting?.city, "Dunwoody");
+  assert.equal(meeting?.locationName, "Dunwoody Baptist Church room A200");
+});
+
 test("duplicate feed/slug rows collapse before insert", () => {
   const rows = dedupeMeetingsBySlug([
     { feedId: "london-uk", slug: "same", name: "first" },
@@ -227,4 +260,49 @@ test("duplicate feed/slug rows collapse before insert", () => {
   ]);
   assert.equal(rows.length, 2);
   assert.equal(rows.find((row) => row.slug === "same")?.name, "second");
+});
+
+test("OIAA online meetings convert UTC start times into local day and time", () => {
+  const meeting = parseOiaaMeeting(
+    {
+      groupID: "abc",
+      slug: "serenity-at-sunrise-5",
+      name: "Serenity At Sunrise",
+      timezone: "America/New_York",
+      timeUTC: "2026-09-18T13:30:00.000Z",
+      duration: 60,
+      conference_url: "https://zoom.us/j/3973109350",
+      formats: ["DR", "MED"],
+      type: "C",
+      communities: ["W"],
+      languages: ["en"],
+      groupEmail: "serenity@example.com",
+    },
+    "oiaa-online",
+    "aa",
+  );
+
+  assert.equal(meeting?.attendance, "online");
+  assert.equal(meeting?.day, 5);
+  assert.equal(meeting?.time, "09:30");
+  assert.equal(meeting?.endTime, "10:30");
+  assert.ok(meeting?.types.includes("ONL"));
+  assert.ok(meeting?.types.includes("C"));
+  assert.ok(meeting?.types.includes("W"));
+  assert.equal(meeting?.conferenceUrl, "https://zoom.us/j/3973109350");
+});
+
+test("OIAA listings without a join URL or phone are skipped", () => {
+  const meeting = parseOiaaMeeting(
+    {
+      groupID: "abc",
+      name: "No Join Info",
+      timezone: "America/New_York",
+      timeUTC: "2026-09-18T13:30:00.000Z",
+      conference_url: null,
+    },
+    "oiaa-online",
+    "aa",
+  );
+  assert.equal(meeting, null);
 });

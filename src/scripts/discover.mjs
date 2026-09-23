@@ -60,7 +60,7 @@ function guessRegion(host) {
 function guessFellowship(host, hinted) {
   if (hinted) return hinted;
   if (/\bna[-.]|narcotics|bmlt/.test(host)) return "na";
-  if (/\bca[-.]|cocaineanonymous|ca4la|cauk/.test(host)) return "ca";
+  if (/\bca[-.]|cocaineanonymous|ca4la|cauk|georgiaca/.test(host)) return "ca";
   return "aa";
 }
 

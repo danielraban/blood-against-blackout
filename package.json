@@ -12,14 +12,15 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:push": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node --import tsx src/scripts/migrate.ts",
+    "db:sync": "npx neonctl branches reset local-daniel --project-id bold-grass-74782708 --parent",
     "ingest": "node --import tsx src/scripts/ingest.ts",
     "audit": "node --import tsx src/scripts/audit-meetings.ts",
     "test": "node --import tsx --test src/lib/*.test.ts",
     "test:e2e": "playwright test",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "sample": "node src/scripts/load-sample.mjs",
-    "discover": "node src/scripts/discover.mjs"
+    "discover": "node --import tsx src/scripts/discover.ts"
   },
   "dependencies": {
     "@code4recovery/spec": "^1.1.9",

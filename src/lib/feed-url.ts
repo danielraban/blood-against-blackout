@@ -61,17 +61,46 @@ export function fallbackFeedUrls(raw: string) {
     const root = `${url.origin}${url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`}`;
     return [canonicalFeedUrl(`${root}client_interface/json/?switcher=GetSearchResults`)];
   }
-  const origin = `${url.protocol}//${url.hostname}`;
-  const candidates = [
+  const current = canonicalFeedUrl(raw);
+  return [
+    ...new Set(
+      tsmlCandidateUrls(url.hostname)
+        .map(canonicalFeedUrl)
+        .filter((candidate) => candidate !== current),
+    ),
+  ];
+}
+
+export function tsmlCandidateUrls(host: string) {
+  const hostname = host.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const origin = `https://${hostname}`;
+  return [
+    `${origin}/wp-admin/admin-ajax.php?action=meetings`,
+    `${origin}/?tsml-feed=1`,
+    `${origin}/?post_type=tsml_meeting&feed=tsml`,
     `${origin}/wp-json/tsml/v1/meetings`,
     `${origin}/api/meetingguide`,
     `${origin}/api/meetingguide/`,
+    `${origin}/api/meetingguide.json`,
     `${origin}/meetings.json`,
   ];
-  const current = canonicalFeedUrl(raw);
-  return [...new Set(candidates.map(canonicalFeedUrl))].filter(
-    (candidate) => candidate !== current,
-  );
+}
+
+export function feedIdsToReplaceForCatalog(
+  catalog: { id: string; url: string }[],
+  existing: { id: string; url: string }[],
+) {
+  const catalogIdByUrl = new Map<string, string>();
+  for (const row of catalog) {
+    const url = canonicalFeedUrl(row.url);
+    if (!catalogIdByUrl.has(url)) catalogIdByUrl.set(url, row.id);
+  }
+  const replace = new Set<string>();
+  for (const row of existing) {
+    const catalogId = catalogIdByUrl.get(canonicalFeedUrl(row.url));
+    if (catalogId && catalogId !== row.id) replace.add(row.id);
+  }
+  return [...replace];
 }
 
 export const DUPLICATE_FEED_IDS = [
@@ -79,4 +108,10 @@ export const DUPLICATE_FEED_IDS = [
   "aa-london-com",
   "www-aa-org-nz",
   "www-memphis-aa-org",
+  "www-oc-aa-org",
+  "www-aamonterey-org",
+  "www-ct-aa-org",
+  "www-area74-org",
+  "www-aavirginia-org",
+  "www-area78-org",
 ] as const;

@@ -108,6 +108,78 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+test("nearby after use my location keeps local meetings and hides far online rows", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition: (success: PositionCallback) =>
+          success({
+            coords: {
+              latitude: 51.5072,
+              longitude: -0.1276,
+              accuracy: 20,
+              altitude: null,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+            },
+            timestamp: Date.now(),
+          } as GeolocationPosition),
+        watchPosition: () => 0,
+        clearWatch: () => undefined,
+      },
+    });
+  });
+
+  const localOnline = {
+    ...meeting(),
+    slug: "lombard-street",
+    name: "Lombard Street @ 6am",
+    city: "London",
+    country: "GB",
+  };
+  const localInPerson = {
+    ...meeting(),
+    slug: "pimlico",
+    name: "Pimlico 12 Steps",
+    attendance: "in-person" as const,
+    city: "London",
+    country: "GB",
+    locationName: "St Margarets Drop-in Centre",
+    lat: 51.49,
+    lng: -0.14,
+    geohash4: "gcpv",
+  };
+  const farOnline = {
+    ...meeting(),
+    slug: "richmond-lunchie",
+    name: "Richmond Lunchie",
+    city: "Richmond",
+    state: "VA",
+    country: "US",
+    lat: 37.5407,
+    lng: -77.436,
+    geohash4: "dq8b",
+  };
+
+  await mockAppApis(page, {
+    slice: {
+      ...emptySlice(),
+      meetings: [localOnline, localInPerson, farOnline],
+    },
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "use my location" }).click();
+  await expect(page.getByText("Lombard Street @ 6am")).toBeVisible();
+  await expect(page.getByText("Pimlico 12 Steps")).toBeVisible();
+  await expect(page.getByText("Richmond Lunchie")).toHaveCount(0);
+  await expect(page.getByText("Times as of")).toHaveCount(0);
+  await expect(page.getByText(/\d{3,} km/)).toHaveCount(0);
+  await expect(page.getByText("save as home")).toBeVisible();
+});
+
 test("offers a city fallback when geolocation is denied", async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "geolocation", {

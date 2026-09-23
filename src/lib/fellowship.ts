@@ -1,6 +1,6 @@
 export type Fellowship = "aa" | "na" | "ca";
 export type FellowshipFilter = "all" | Fellowship;
-export type FeedFormat = "tsml" | "bmlt";
+export type FeedFormat = "tsml" | "bmlt" | "oiaa";
 
 export const FELLOWSHIP_LABEL: Record<Fellowship, string> = {
   aa: "AA",
@@ -20,6 +20,6 @@ export function asFellowship(value: unknown): Fellowship {
 }
 
 export function asFeedFormat(value: unknown): FeedFormat {
-  if (value === "bmlt") return "bmlt";
+  if (value === "bmlt" || value === "oiaa") return value;
   return "tsml";
 }

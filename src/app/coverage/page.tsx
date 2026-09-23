@@ -3,9 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MeetingMap } from "@/components/meeting-map";
+import { OfficialLocators } from "@/components/official-locators";
 import type { RankedMeeting } from "@/lib/search";
 
 type Coverage = {
+  totals?: {
+    freshWeeklyOccurrences: number;
+    freshFeedCount: number;
+    enabledFeedCount: number;
+    catalogFeedCount: number;
+    meetingGuideEntities: number;
+    meetingGuideWeeklyMeetings: number;
+  };
   feeds: {
     id: string;
     name: string;
@@ -84,6 +93,8 @@ export default function CoveragePage() {
       nextDay: null,
     })) ?? [];
 
+  const totals = data?.totals;
+
   return (
     <div className="space-y-5">
       <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">coverage</h1>
@@ -94,8 +105,29 @@ export default function CoveragePage() {
         UK GSO, UKNA, and CAUK locators are not public JSON feeds, so we link to
         them instead of scraping.
       </p>
+      {totals ? (
+        <section className="comic-frame space-y-2 bg-card p-4">
+          <h2 className="text-xl font-medium lowercase">fresh weekly occurrences</h2>
+          <p className="text-3xl font-semibold tabular-nums">
+            {totals.freshWeeklyOccurrences.toLocaleString()}
+          </p>
+          <p className="text-muted">
+            from {totals.freshFeedCount.toLocaleString()} feeds ingested in the last 48
+            hours ({totals.enabledFeedCount.toLocaleString()} enabled in a catalog of{" "}
+            {totals.catalogFeedCount.toLocaleString()}). Meeting Guide currently
+            advertises {totals.meetingGuideWeeklyMeetings.toLocaleString()}+ A.A.
+            meetings from {totals.meetingGuideEntities}+ service entities. This
+            app counts the same way — one weekly time slot is one meeting — and
+            only from public JSON.
+          </p>
+        </section>
+      ) : null}
       {error ? <p>{error}</p> : null}
       {points.length ? <MeetingMap meetings={points} origin={null} /> : null}
+      <section className="space-y-3">
+        <h2 className="text-xl font-medium lowercase">official locators</h2>
+        <OfficialLocators />
+      </section>
       <section>
         <h2 className="text-xl font-medium lowercase">cities with listings</h2>
         <ul className="mt-3 divide-y divide-black border-4 border-black bg-card shadow-[6px_6px_0_0_#ff2ad4]">
