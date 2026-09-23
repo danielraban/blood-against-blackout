@@ -9,17 +9,17 @@ export async function GET(request: Request) {
   const q = searchParams.get("q")?.trim() ?? "";
   const db = getDb();
   try {
-    const pattern = q ? `%${escapeIlike(q)}%` : "";
+    const contains = q ? `%${escapeIlike(q)}%` : "";
     const rows = q
       ? await db
           .select()
           .from(cities)
           .where(
             or(
-              ilike(cities.label, pattern),
-              ilike(cities.slug, pattern),
-              ilike(cities.parentLabel, pattern),
-              sql`exists (select 1 from unnest(${cities.aliases}) alias where alias ilike ${pattern})`,
+              ilike(cities.label, contains),
+              ilike(cities.slug, contains),
+              ilike(cities.parentLabel, contains),
+              sql`${cities.aliases}::text ilike ${contains}`,
             ),
           )
           .orderBy(
