@@ -10,12 +10,15 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "db:migrate": "node --import tsx src/scripts/migrate.ts",
     "db:sync": "npx neonctl branches reset local-daniel --project-id bold-grass-74782708 --parent",
     "ingest": "node --import tsx src/scripts/ingest.ts",
     "audit": "node --import tsx src/scripts/audit-meetings.ts",
     "test": "node --import tsx --test src/lib/*.test.ts",
+    "test:e2e": "playwright test",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "sample": "node src/scripts/load-sample.mjs",
     "discover": "node --import tsx src/scripts/discover.ts"
   },
@@ -38,6 +41,8 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/ngeohash": "^0.6.8",
     "@types/node": "^20",

@@ -1,0 +1,22 @@
+---
+description: Testing expectations for OpenChair TypeScript and Next.js changes
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Testing
+
+- Add or update a regression test whenever behavior changes.
+- Keep pure domain tests beside their modules as `src/lib/*.test.ts` using
+  `node:test` and `node:assert/strict`.
+- Use Playwright for browser behavior, IndexedDB, navigation, and accessibility.
+- Mock public feeds, map tiles, and application APIs in pull-request browser
+  tests. Tests must not depend on live Neon data or the public internet.
+- Test both success and denial/error behavior at auth, geolocation, parsing,
+  and network boundaries.
+- Time-of-day tests must use a UTC instant and the meeting timezone or origin,
+  not `new Date(y, m, d, h)` in the runner's local zone.
+- Run the narrowest relevant test while editing, then `npm run check` before
+  declaring the task complete. Run `npm run test:e2e` for user-flow changes.
+- Never weaken an assertion merely to make a failing test pass; confirm whether
+  the implementation or the expected behavior is wrong.

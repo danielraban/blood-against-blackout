@@ -206,7 +206,7 @@ export function normalizePlaceFields(input: PlaceFields): PlaceFields {
   let neighborhood = cleanNeighborhood(input.neighborhood);
   let state = cleanLocationPart(input.state);
   let postalCode = cleanLocationPart(input.postalCode);
-  let country = normalizeCountry(input.country);
+  const country = normalizeCountry(input.country);
 
   const fromCity = parsePostalAndStatePrefix(city);
   if (fromCity) {

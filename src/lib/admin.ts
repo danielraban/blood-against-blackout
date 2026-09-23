@@ -10,13 +10,23 @@ export async function isAdmin() {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!value || !secret) return false;
 
-  const [expiresRaw, signature] = value.split(".");
+  return verifyAdminSession(value, secret);
+}
+
+export function verifyAdminSession(
+  value: string,
+  secret: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+) {
+  const parts = value.split(".");
+  if (parts.length !== 2) return false;
+  const [expiresRaw, signature] = parts;
   const expires = Number(expiresRaw);
   if (
     !expiresRaw ||
     !signature ||
     !Number.isSafeInteger(expires) ||
-    expires <= Math.floor(Date.now() / 1000)
+    expires <= nowSeconds
   ) {
     return false;
   }
@@ -29,10 +39,17 @@ export function adminCookieHeader() {
   if (!secret) {
     throw new Error("ADMIN_SESSION_SECRET is not set");
   }
-  const expires = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS;
-  const value = `${expires}.${sign(String(expires), secret)}`;
+  const value = createAdminSessionValue(secret);
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
   return `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_MAX_AGE_SECONDS}${secure}`;
+}
+
+export function createAdminSessionValue(
+  secret: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
+) {
+  const expires = nowSeconds + SESSION_MAX_AGE_SECONDS;
+  return `${expires}.${sign(String(expires), secret)}`;
 }
 
 export function clearAdminCookieHeader() {

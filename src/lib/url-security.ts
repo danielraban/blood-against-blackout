@@ -4,7 +4,15 @@ import { isIP } from "node:net";
 
 const BLOCKED_HOST_SUFFIXES = [".local", ".internal", ".localhost"];
 
-export async function assertPublicHttpsUrl(raw: string): Promise<URL> {
+type ResolveHost = (hostname: string) => Promise<LookupAddress[]>;
+
+const resolveHost: ResolveHost = (hostname) =>
+  lookup(hostname, { all: true, verbatim: true });
+
+export async function assertPublicHttpsUrl(
+  raw: string,
+  resolve: ResolveHost = resolveHost,
+): Promise<URL> {
   if (raw.length > 2048) throw new Error("Feed URL is too long");
 
   let url: URL;
@@ -23,7 +31,10 @@ export async function assertPublicHttpsUrl(raw: string): Promise<URL> {
     throw new Error("Feed URL must be public HTTPS");
   }
 
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+  const hostname = url.hostname
+    .toLowerCase()
+    .replace(/\.$/, "")
+    .replace(/^\[|\]$/g, "");
   if (
     hostname === "localhost" ||
     BLOCKED_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix))
@@ -40,7 +51,7 @@ export async function assertPublicHttpsUrl(raw: string): Promise<URL> {
 
   let addresses: LookupAddress[];
   try {
-    addresses = await lookup(hostname, { all: true, verbatim: true });
+    addresses = await resolve(hostname);
   } catch {
     throw new Error("Feed host could not be resolved");
   }
@@ -51,10 +62,21 @@ export async function assertPublicHttpsUrl(raw: string): Promise<URL> {
   return url;
 }
 
+function ipv4MappedAddress(address: string) {
+  const dotted = address.match(/:ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1];
+  if (dotted) return dotted;
+
+  const hex = address.match(/:ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (!hex) return null;
+  const high = Number.parseInt(hex[1], 16);
+  const low = Number.parseInt(hex[2], 16);
+  return `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+}
+
 function isPrivateAddress(address: string) {
   if (address.includes(":")) {
     const value = address.toLowerCase();
-    const mappedV4 = value.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1];
+    const mappedV4 = ipv4MappedAddress(value);
     if (mappedV4) return isPrivateAddress(mappedV4);
     return (
       value === "::" ||

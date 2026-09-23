@@ -42,6 +42,7 @@ const meeting: Meeting = {
 
 const LONDON = { lat: 51.5072, lng: -0.1276 };
 const WEDNESDAY_20_LONDON = new Date("2026-09-16T19:00:00.000Z");
+const WEDNESDAY = 3;
 
 function search(query: string) {
   return filterAndGroup(
@@ -120,39 +121,35 @@ test("distinct meetings at the same time are kept", () => {
 });
 
 test("a meeting that already ended today is not shown as later today", () => {
-  const now = new Date(2026, 8, 16, 20, 0);
   const result = filterAndGroup(
-    [{ ...meeting, day: now.getDay(), time: "07:00", endTime: "08:00" }],
+    [{ ...meeting, day: WEDNESDAY, time: "07:00", endTime: "08:00" }],
     DEFAULT_FILTERS,
-    null,
-    now,
+    LONDON,
+    WEDNESDAY_20_LONDON,
   );
   assert.equal(result.count, 0);
   assert.equal(result.groups.later.length, 0);
 });
 
 test("week results expose calendar day offsets for day-based headings", () => {
-  const now = new Date(2026, 8, 16, 20, 0);
-  const tomorrow = (now.getDay() + 1) % 7;
   const result = filterAndGroup(
-    [{ ...meeting, day: tomorrow, time: "19:00" }],
+    [{ ...meeting, day: (WEDNESDAY + 1) % 7, time: "19:00" }],
     { ...DEFAULT_FILTERS, day: "any", week: true },
-    null,
-    now,
+    LONDON,
+    WEDNESDAY_20_LONDON,
   );
   assert.equal(result.groups.week[0]?.daysUntil, 1);
 });
 
 test("remaining meetings later today stay visible until midnight", () => {
-  const now = new Date(2026, 8, 16, 20, 0);
   const result = filterAndGroup(
     [
-      { ...meeting, slug: "now", day: now.getDay(), time: "19:30", endTime: "20:30" },
-      { ...meeting, slug: "tonight", day: now.getDay(), time: "23:15" },
+      { ...meeting, slug: "now", day: WEDNESDAY, time: "19:30", endTime: "20:30" },
+      { ...meeting, slug: "tonight", day: WEDNESDAY, time: "23:15" },
     ],
     DEFAULT_FILTERS,
-    null,
-    now,
+    LONDON,
+    WEDNESDAY_20_LONDON,
   );
   assert.equal(result.groups.happening[0]?.slug, "now");
   assert.equal(result.groups.later[0]?.slug, "tonight");
@@ -160,16 +157,14 @@ test("remaining meetings later today stay visible until midnight", () => {
 });
 
 test("after a location search, later today and upcoming days are both included", () => {
-  const now = new Date(2026, 8, 16, 20, 0);
-  const tomorrow = (now.getDay() + 1) % 7;
   const result = filterAndGroup(
     [
-      { ...meeting, slug: "tonight", day: now.getDay(), time: "23:00" },
-      { ...meeting, slug: "tomorrow", day: tomorrow, time: "19:00" },
+      { ...meeting, slug: "tonight", day: WEDNESDAY, time: "23:00" },
+      { ...meeting, slug: "tomorrow", day: (WEDNESDAY + 1) % 7, time: "19:00" },
     ],
     { ...DEFAULT_FILTERS, week: true },
-    null,
-    now,
+    LONDON,
+    WEDNESDAY_20_LONDON,
   );
   assert.equal(result.groups.later[0]?.slug, "tonight");
   assert.equal(result.groups.week[0]?.slug, "tomorrow");

@@ -1,0 +1,98 @@
+name: Preview health
+
+on:
+  deployment_status:
+
+concurrency:
+  group: preview-health-${{ github.event.deployment.id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  health:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment != 'Production' &&
+      github.event.deployment.environment != 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Verify preview health
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${DEPLOYMENT_URL:-}" ]]; then
+            echo "The deployment event did not include a preview URL."
+            exit 1
+          fi
+
+          health_url="${DEPLOYMENT_URL%/}/api/health"
+          echo "Checking preview health at ${health_url}"
+
+          curl_headers=()
+          if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+            curl_headers+=(
+              --header "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}"
+            )
+          else
+            echo "VERCEL_AUTOMATION_BYPASS_SECRET is unset in GitHub Actions."
+          fi
+
+          request_health() {
+            curl --silent --show-error \
+              --location --max-redirs 5 \
+              --max-time 15 \
+              --output health.json \
+              --write-out "%{http_code}" \
+              "${curl_headers[@]}" \
+              "$1" || true
+          }
+
+          health_ok() {
+            [[ "$1" == "200" ]] && node --input-type=module -e '
+              import fs from "node:fs";
+              const body = JSON.parse(fs.readFileSync("health.json", "utf8"));
+              process.exit(body.ok === true ? 0 : 1);
+            '
+          }
+
+          for attempt in {1..12}; do
+            http_code="$(request_health "$health_url")"
+            if health_ok "$http_code"; then
+              echo "Preview health check passed."
+              exit 0
+            fi
+
+            if [[ "$http_code" == "301" || "$http_code" == "302" || "$http_code" == "307" || "$http_code" == "308" || "$http_code" == "401" || "$http_code" == "403" ]]; then
+              if [[ -z "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+                echo "Preview protection redirected the health check (HTTP ${http_code})."
+                echo "Create a Protection Bypass for Automation secret in the Vercel project, then add the same value as the GitHub Actions secret VERCEL_AUTOMATION_BYPASS_SECRET."
+                exit 1
+              fi
+
+              bypass_url="${health_url}?x-vercel-protection-bypass=${VERCEL_AUTOMATION_BYPASS_SECRET}"
+              http_code="$(request_health "$bypass_url")"
+              if health_ok "$http_code"; then
+                echo "Preview health check passed."
+                exit 0
+              fi
+
+              echo "A bypass secret was sent but Vercel still returned HTTP ${http_code:-000}."
+              echo "Confirm the GitHub secret matches the current Vercel Protection Bypass value."
+              if [[ -f health.json ]]; then cat health.json; fi
+              exit 1
+            fi
+
+            echo "Health check attempt $attempt returned HTTP ${http_code:-000}; retrying."
+            sleep 5
+          done
+
+          echo "Preview health check failed."
+          if [[ -f health.json ]]; then cat health.json; fi
+          exit 1
