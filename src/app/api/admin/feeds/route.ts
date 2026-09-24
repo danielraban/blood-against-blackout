@@ -83,7 +83,7 @@ export async function POST(request: Request) {
   }
 
   if (body.action === "seed") {
-    await seedFeedCatalog();
+    await seedFeedCatalog({ force: true });
     return NextResponse.json({ ok: true });
   }
 

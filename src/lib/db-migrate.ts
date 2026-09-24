@@ -21,6 +21,7 @@ export type SchemaFacts = {
   hasMeetingsNeighborhood: boolean;
   hasPlaceCanonicalCache: boolean;
   hasFeedsEtag: boolean;
+  hasFeedsLease: boolean;
 };
 
 export function alreadyAppliedPrefix(facts: SchemaFacts) {
@@ -29,6 +30,7 @@ export function alreadyAppliedPrefix(facts: SchemaFacts) {
     facts.hasMeetingsVerifiedAt,
     facts.hasMeetingsNeighborhood || facts.hasPlaceCanonicalCache,
     facts.hasFeedsEtag,
+    facts.hasFeedsLease,
   ];
   let count = 0;
   for (const present of checks) {
@@ -127,6 +129,7 @@ async function inspectSchema(client: SqlClient): Promise<SchemaFacts> {
     ),
     hasPlaceCanonicalCache: await tableExists(client, "place_canonical_cache"),
     hasFeedsEtag: await columnExists(client, "feeds", "etag"),
+    hasFeedsLease: await columnExists(client, "feeds", "leased_until"),
   };
 }
 

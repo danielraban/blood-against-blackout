@@ -23,6 +23,7 @@ export const feeds = pgTable("feeds", {
   meetingCount: integer("meeting_count").notNull().default(0),
   etag: text("etag"),
   lastModified: text("last_modified"),
+  leasedUntil: timestamp("leased_until", { withTimezone: true }),
 });
 
 export const entities = pgTable(
@@ -112,6 +113,12 @@ export const cities = pgTable(
     index("cities_geohash_idx").on(table.geohash4),
   ],
 );
+
+export const ingestCatalog = pgTable("ingest_catalog", {
+  id: text("id").primaryKey(),
+  contentHash: text("content_hash").notNull(),
+  seededAt: timestamp("seeded_at", { withTimezone: true }).notNull(),
+});
 
 export const ingestRuns = pgTable("ingest_runs", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

@@ -10,6 +10,7 @@ test("alreadyAppliedPrefix records consecutive applied migrations only", () => {
       hasMeetingsNeighborhood: false,
       hasPlaceCanonicalCache: false,
       hasFeedsEtag: false,
+      hasFeedsLease: false,
     }),
     0,
   );
@@ -20,6 +21,7 @@ test("alreadyAppliedPrefix records consecutive applied migrations only", () => {
       hasMeetingsNeighborhood: false,
       hasPlaceCanonicalCache: false,
       hasFeedsEtag: false,
+      hasFeedsLease: false,
     }),
     1,
   );
@@ -30,6 +32,7 @@ test("alreadyAppliedPrefix records consecutive applied migrations only", () => {
       hasMeetingsNeighborhood: true,
       hasPlaceCanonicalCache: true,
       hasFeedsEtag: false,
+      hasFeedsLease: false,
     }),
     3,
   );
@@ -40,8 +43,20 @@ test("alreadyAppliedPrefix records consecutive applied migrations only", () => {
       hasMeetingsNeighborhood: true,
       hasPlaceCanonicalCache: true,
       hasFeedsEtag: true,
+      hasFeedsLease: false,
     }),
     4,
+  );
+  assert.equal(
+    alreadyAppliedPrefix({
+      hasFeedsTable: true,
+      hasMeetingsVerifiedAt: true,
+      hasMeetingsNeighborhood: true,
+      hasPlaceCanonicalCache: true,
+      hasFeedsEtag: true,
+      hasFeedsLease: true,
+    }),
+    5,
   );
 });
 
@@ -53,6 +68,7 @@ test("alreadyAppliedPrefix stops at the first missing migration", () => {
       hasMeetingsNeighborhood: true,
       hasPlaceCanonicalCache: true,
       hasFeedsEtag: true,
+      hasFeedsLease: false,
     }),
     1,
   );

@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { getDb } from "./db";
 import { placeCanonicalCache } from "./schema";
+import { scheduleNominatim } from "./nominatim-limit";
 import {
   locationNeedsEnrichment,
   mergeResolvedPlace,
@@ -137,8 +138,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<PlaceFields | n
   url.searchParams.set("format", "json");
   url.searchParams.set("zoom", "14");
   url.searchParams.set("addressdetails", "1");
-  const response = await fetch(url, { headers: NOMINATIM_HEADERS });
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  const response = await scheduleNominatim(() => fetch(url, { headers: NOMINATIM_HEADERS }));
   if (!response.ok) return null;
   const data = (await response.json()) as { address?: NominatimAddress };
   if (!data.address) return null;
