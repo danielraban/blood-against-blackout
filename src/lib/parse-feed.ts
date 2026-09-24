@@ -5,12 +5,14 @@ import type { FeedFormat, Fellowship } from "./fellowship";
 import { isValidTimeZone } from "./timezone";
 import {
   cleanLocationPart,
+  collapseAddressWhitespace,
   isBmltAreaName,
   isPostalCode,
   isStateCode,
   isUsableCityLabel,
   normalizeCountry,
   normalizePlaceFields,
+  placeFromFormattedAddress,
 } from "./location";
 
 export type RawMeeting = Record<string, unknown>;
@@ -112,8 +114,11 @@ function parseUpdated(value: unknown): Date | null {
 }
 
 function cityFromFormatted(formatted: string | null, country: string | null) {
-  if (!formatted) return null;
-  const parts = formatted.split(",").map((p) => p.trim()).filter(Boolean);
+  const collapsed = collapseAddressWhitespace(formatted);
+  const fromPlace = placeFromFormattedAddress(collapsed, country);
+  if (fromPlace.city) return fromPlace.city;
+  if (!collapsed) return null;
+  const parts = collapsed.split(",").map((p) => p.trim()).filter(Boolean);
   const skip = new Set(
     ["usa", "us", "uk", "united kingdom", "united states", country?.toLowerCase() ?? ""],
   );
@@ -372,13 +377,15 @@ export function parseTsmlMeeting(
       .join(", ") ||
     null;
   const country = normalizeCountry(asString(raw.country));
+  const inferred = placeFromFormattedAddress(formattedAddress, country);
   const explicitCity = cleanLocationPart(asString(raw.city));
-  const inferredCity = cityFromFormatted(formattedAddress, country);
+  const inferredCity = inferred.city ?? cityFromFormatted(inferred.formattedAddress, country);
+  const cleanedAddress = inferred.formattedAddress ?? formattedAddress;
   const place = normalizePlaceFields({
     city: isUsableCityLabel(explicitCity) ? explicitCity : inferredCity,
-    neighborhood: null,
+    neighborhood: inferred.neighborhood,
     state: asString(raw.state) || asString(raw.region),
-    postalCode: asString(raw.postal_code),
+    postalCode: asString(raw.postal_code) ?? inferred.postalCode,
     country,
   });
 
@@ -401,7 +408,7 @@ export function parseTsmlMeeting(
     state: place.state,
     postalCode: place.postalCode,
     country: place.country,
-    formattedAddress,
+    formattedAddress: cleanedAddress,
     ...withGeo(lat, lng),
     conferenceUrl: asString(raw.conference_url),
     conferencePhone: asString(raw.conference_phone),

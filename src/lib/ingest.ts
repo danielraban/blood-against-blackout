@@ -33,7 +33,12 @@ import {
   INGEST_CITIES_ID,
 } from "./ingest-catalog";
 import { feedClaimSql } from "./ingest-claim";
-import { uniqueGeocodeQueries } from "./geocode-batch";
+import {
+  borrowVenueCoordinates,
+  POSTCODE_GEOCODE_LIMIT,
+  postcodeGeocodeQuery,
+  uniqueGeocodeQueries,
+} from "./geocode-batch";
 import {
   FEED_LEASE_SECONDS,
   mapClaimedFeedRow,
@@ -226,6 +231,11 @@ class GeocodeLookup {
     if (missing.length === 0) return;
     const loaded = await loadGeocodeCache(missing);
     for (const [query, point] of loaded) this.points.set(query, point);
+  }
+
+  cached(query: string): GeoPoint | null | undefined {
+    if (!this.points.has(query)) return undefined;
+    return this.points.get(query) ?? null;
   }
 
   resolve(query: string): Promise<GeoPoint | null> {
@@ -780,18 +790,40 @@ async function ingestFeed(
       }
     }
 
+    const placed = borrowVenueCoordinates(parsed);
     let geocodeBudget = 3;
+    let postcodeBudget = POSTCODE_GEOCODE_LIMIT;
     const cityGeo = new Map<string, { lat: number; lng: number }>();
-    await geocodes.preload(uniqueGeocodeQueries(parsed));
+    await geocodes.preload(uniqueGeocodeQueries(placed));
     const meetingRows: (typeof meetings.$inferInsert)[] = [];
     const chunkSize = 80;
-    for (const item of parsed) {
+    for (const item of placed) {
       let lat = item.lat;
       let lng = item.lng;
       let geohash4 = item.geohash4;
       let attendance = item.attendance;
       let types = item.types;
+      const postcodeQuery = postcodeGeocodeQuery(item);
       if (
+        (lat == null || lng == null) &&
+        attendance !== "online" &&
+        postcodeQuery
+      ) {
+        const known = geocodes.cached(postcodeQuery);
+        if (known) {
+          lat = known.lat;
+          lng = known.lng;
+          geohash4 = encodeGeohash4(known.lat, known.lng);
+        } else if (known === undefined && postcodeBudget > 0) {
+          postcodeBudget -= 1;
+          const geo = await geocodes.resolve(postcodeQuery);
+          if (geo) {
+            lat = geo.lat;
+            lng = geo.lng;
+            geohash4 = encodeGeohash4(geo.lat, geo.lng);
+          }
+        }
+      } else if (
         (lat == null || lng == null) &&
         attendance !== "online" &&
         item.formattedAddress &&
@@ -805,7 +837,7 @@ async function ingestFeed(
           geohash4 = encodeGeohash4(geo.lat, geo.lng);
         }
       }
-      if ((lat == null || lng == null) && attendance !== "online" && item.city) {
+      if ((lat == null || lng == null) && attendance !== "online" && item.city && !item.postalCode) {
         const cityKey = [item.city, item.state, item.country].filter(Boolean).join(", ");
         let geo = cityGeo.get(cityKey);
         if (!geo && cityGeo.size < 12) {

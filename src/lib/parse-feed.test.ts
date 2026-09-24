@@ -9,6 +9,40 @@ import {
   parseOiaaMeeting,
 } from "./parse-feed";
 
+test("a line-broken London address keeps the municipality, neighborhood, and postcode", () => {
+  const meeting = parseTsmlMeeting(
+    {
+      name: "Bring Your Own Big Book (BYOBB)",
+      slug: "bring-your-own-big-book-byobb-190000-f2f-79600",
+      day: [4],
+      time: "19:00",
+      end_time: "",
+      timezone: "Europe/London",
+      types: ["B", "C"],
+      location: "Canal Club Community Centre",
+      formatted_address:
+        "Belmont Wharf,\r\nWaterloo Gdns,\r\nBethnal Green,London,United Kingdom,E2 9HP",
+      country: "UK",
+      latitude: null,
+      longitude: null,
+    },
+    "london-uk",
+    "aa",
+  );
+
+  assert.equal(meeting?.day, 4);
+  assert.equal(meeting?.time, "19:00");
+  assert.equal(meeting?.city, "London");
+  assert.equal(meeting?.neighborhood, "Bethnal Green");
+  assert.equal(meeting?.postalCode, "E2 9HP");
+  assert.equal(meeting?.country, "GB");
+  assert.equal(meeting?.lat, null);
+  assert.equal(
+    meeting?.formattedAddress,
+    "Belmont Wharf, Waterloo Gdns, Bethnal Green, London, United Kingdom, E2 9HP",
+  );
+});
+
 test("TSML region is not incorrectly used as the city", () => {
   const meeting = parseTsmlMeeting(
     {

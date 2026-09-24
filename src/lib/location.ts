@@ -137,6 +137,96 @@ function isKnownMunicipality(value: string | null | undefined) {
   return KNOWN_MUNICIPALITIES.has(canonical.toLowerCase());
 }
 
+const STREET_LABEL =
+  /\b(street|road|rd|gardens|gdns|gdn|lane|ln|wharf|avenue|ave|close|drive|way|terrace|crescent|parade|place)\b/i;
+
+const FORMATTED_PLACE_SKIP = new Set([
+  "usa",
+  "us",
+  "uk",
+  "gb",
+  "united kingdom",
+  "united states",
+  "great britain",
+]);
+
+export function collapseAddressWhitespace(value: string | null | undefined) {
+  if (!value) return null;
+  const cleaned = value
+    .replace(/\s+/g, " ")
+    .replace(/\s*,\s*/g, ", ")
+    .trim();
+  return cleaned || null;
+}
+
+function isStreetLabel(value: string) {
+  return STREET_LABEL.test(value);
+}
+
+function formattedPartPostal(part: string) {
+  const parsed = parsePostalAndStatePrefix(part);
+  if (!parsed?.postal || parsed.state) return null;
+  return parsed.postal;
+}
+
+export function placeFromFormattedAddress(
+  formatted: string | null | undefined,
+  country: string | null | undefined,
+) {
+  const formattedAddress = collapseAddressWhitespace(formatted);
+  if (!formattedAddress) {
+    return {
+      formattedAddress: null,
+      city: null,
+      neighborhood: null,
+      postalCode: null,
+    };
+  }
+  const skip = new Set(FORMATTED_PLACE_SKIP);
+  const countryName = country?.trim().toLowerCase();
+  if (countryName) skip.add(countryName);
+  const parts = formattedAddress
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  let postalCode: string | null = null;
+  const placeParts: string[] = [];
+  for (const part of parts) {
+    const postal = formattedPartPostal(part);
+    if (postal) {
+      postalCode = postalCode ?? postal;
+      continue;
+    }
+    placeParts.push(part);
+  }
+  const cityIndex = placeParts.findIndex((part) => isKnownMunicipality(part));
+  if (cityIndex >= 0) {
+    let neighborhood: string | null = null;
+    for (let index = cityIndex - 1; index >= 0; index -= 1) {
+      const part = placeParts[index];
+      const lower = part.toLowerCase();
+      if (skip.has(lower) || isStreetLabel(part) || isPostalCode(part) || isStateCode(part)) {
+        if (isStreetLabel(part)) break;
+        continue;
+      }
+      neighborhood = isUsableNeighborhood(part) ? cleanNeighborhood(part) : null;
+      break;
+    }
+    return {
+      formattedAddress,
+      city: canonicalCityName(placeParts[cityIndex]),
+      neighborhood,
+      postalCode,
+    };
+  }
+  return {
+    formattedAddress,
+    city: null,
+    neighborhood: null,
+    postalCode,
+  };
+}
+
 export function isPlausibleState(value: string | null | undefined) {
   const cleaned = cleanLocationPart(value);
   if (!cleaned) return true;
