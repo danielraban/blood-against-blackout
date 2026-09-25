@@ -24,8 +24,10 @@ import {
 } from "@/lib/search";
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
+import { AskPanel } from "@/components/ask-panel";
 import { ComicStrip } from "@/components/comic-strip";
 import { OfficialLocators } from "@/components/official-locators";
+import { meetingRefsForChat } from "@/lib/chat-meetings";
 import { cn } from "@/lib/utils";
 import { Map, SlidersHorizontal, X } from "lucide-react";
 
@@ -245,6 +247,10 @@ export function Finder({
   }, [initialMeetings, mode]);
 
   const meetings = useMemo(() => slice?.meetings ?? [], [slice]);
+  const chatMeetings = useMemo(
+    () => meetingRefsForChat(meetings, origin, filters.radiusKm),
+    [filters.radiusKm, meetings, origin],
+  );
   const { groups, count } = useMemo(
     () => filterAndGroup(meetings, filters, origin),
     [meetings, filters, origin],
@@ -474,6 +480,12 @@ export function Finder({
           </div>
         </section>
       )}
+
+      <AskPanel
+        geohash={mode === "nearby" ? geohash : null}
+        citySlug={selectedCity?.slug}
+        meetings={chatMeetings}
+      />
 
       {canSearchMeetings ? (
         <div className="sticky top-0 z-20 space-y-2 border-y-2 border-black bg-background/95 py-3 backdrop-blur-sm">

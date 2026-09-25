@@ -32,7 +32,7 @@ export function ComicStrip({
   return (
     <section
       aria-label="blood against blackout comic"
-      className={cn("comic-frame bg-black p-1.5", compact && "text-[10px]")}
+      className={cn("comic-frame bg-black p-1.5", compact && "text-xs")}
     >
       <ul className="grid grid-cols-4 gap-2">
         {panels.map((panel, index) => (
@@ -51,7 +51,7 @@ export function ComicStrip({
                 priority={!compact && index < 2}
               />
             </div>
-            <p className="mt-1 min-h-7 bg-warn px-1 py-1 font-display text-[7px] leading-tight tracking-wide text-black sm:px-2 sm:text-xs">
+            <p className="relative z-10 mt-1 bg-[#ffe600] px-2 py-2 text-sm font-semibold leading-normal text-[#000]">
               {panel.label}
             </p>
           </li>

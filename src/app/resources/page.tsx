@@ -90,6 +90,12 @@ export default function ResourcesPage() {
           browser only.
         </p>
         <p>
+          If you use Ask, the question and the public listing text needed to
+          answer it go through the Vercel AI Gateway. The server still receives
+          only a coarse geohash or city slug, not a precise location. Chat
+          transcripts are not stored.
+        </p>
+        <p>
           The map loads tiles from OpenFreeMap only after you choose to show it.
           OpenFreeMap receives the visible map area and standard request
           metadata. Its public service does not require accounts, API keys, or

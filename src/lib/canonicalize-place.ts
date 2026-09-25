@@ -12,6 +12,7 @@ import {
   reverseGeocodeKey,
   type PlaceFields,
 } from "./location";
+import { hasAiGatewayAuth } from "./ai-auth";
 
 const CANONICAL_PLACE_SCHEMA = z.object({
   city: z.string().nullable(),
@@ -41,13 +42,6 @@ const NOMINATIM_HEADERS = {
 
 let aiBlocked = false;
 let loggedAiSkip = false;
-
-function hasAiGatewayAuth() {
-  return Boolean(
-    process.env.AI_GATEWAY_API_KEY?.trim() ||
-      process.env.VERCEL_OIDC_TOKEN?.trim(),
-  );
-}
 
 export function canUseAiCanonicalization() {
   return !aiBlocked && hasAiGatewayAuth();

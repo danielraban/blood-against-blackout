@@ -64,9 +64,10 @@ There is no single national AA feed. blood against blackout uses the same public
 1. Create a Vercel project from this repository and provision or connect Neon.
 2. Add all variables from `.env.example` to Preview and Production.
 3. Set `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS origin and redeploy.
-4. Run `npm run db:migrate`, then `npm run ingest`, against the production Neon branch.
+4. Run `npm run db:migrate` on production `main` first (this enables pgvector and note embeddings), then `npm run ingest`. Reset the local Neon branch with `npm run db:sync` after the production migration.
 5. Deploy a preview and verify `/api/health` returns `{"ok":true}`.
-6. Promote the verified preview. `vercel.json` runs a bounded ingest every 15 minutes, oldest feeds first; Vercel sends `CRON_SECRET` as its bearer token.
+6. Promote the verified preview. `vercel.json` runs a bounded ingest every 15 minutes, oldest feeds first, and a separate note-embedding cron hourly. Vercel sends `CRON_SECRET` as its bearer token.
+7. Add a Vercel Firewall rate limit on `POST /api/chat` so the public Ask route cannot run up AI Gateway spend.
 
 Never commit `.env.local`. The admin cookie is signed and expires after seven days. Opening the optional map sends the visible map area and standard request metadata to OpenFreeMap.
 

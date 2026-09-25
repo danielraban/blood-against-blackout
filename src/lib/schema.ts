@@ -1,4 +1,5 @@
 import {
+  foreignKey,
   index,
   integer,
   pgTable,
@@ -7,6 +8,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  vector,
 } from "drizzle-orm/pg-core";
 
 export const feeds = pgTable("feeds", {
@@ -150,3 +152,24 @@ export const placeCanonicalCache = pgTable("place_canonical_cache", {
   source: text("source").notNull(),
   cachedAt: timestamp("cached_at", { withTimezone: true }).notNull(),
 });
+
+export const meetingNoteEmbeddings = pgTable(
+  "meeting_note_embeddings",
+  {
+    feedId: text("feed_id").notNull(),
+    slug: text("slug").notNull(),
+    contentHash: text("content_hash").notNull(),
+    geohash4: text("geohash4"),
+    embedding: vector("embedding", { dimensions: 512 }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.feedId, table.slug] }),
+    index("meeting_note_embeddings_geohash_idx").on(table.geohash4),
+    foreignKey({
+      columns: [table.feedId, table.slug],
+      foreignColumns: [meetings.feedId, meetings.slug],
+      name: "meeting_note_embeddings_meeting_fk",
+    }).onDelete("cascade"),
+  ],
+);

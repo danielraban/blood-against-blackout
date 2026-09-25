@@ -83,11 +83,22 @@ async function mockAppApis(
     if (url.pathname.startsWith("/api/slices/")) {
       return route.fulfill({ json: { ...slice, geohash: url.pathname.split("/").at(-1) } });
     }
+    if (url.pathname === "/api/chat") {
+      return route.fulfill({ status: 503, json: { error: "Ask is unavailable" } });
+    }
     return route.fulfill({ status: 404, json: { error: "unmocked" } });
   });
 }
 
 async function expectNoSeriousAccessibilityViolations(page: Page) {
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => {
+    const panels = [...document.querySelectorAll(".comic-frame li")];
+    return (
+      panels.length === 0 ||
+      panels.every((panel) => getComputedStyle(panel).opacity === "1")
+    );
+  });
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
@@ -208,6 +219,72 @@ test("offers a city fallback when geolocation is denied", async ({ page }) => {
   await page.getByRole("combobox", { name: "Search city" }).fill("London");
   await page.getByRole("option", { name: /London/ }).click();
   await expect(page.getByText("No public feed covers London yet.")).toBeVisible();
+});
+
+test("ask panel sends geohash and meeting ids after a location, never coordinates", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition: (success: PositionCallback) =>
+          success({
+            coords: {
+              latitude: 51.5072,
+              longitude: -0.1276,
+              accuracy: 20,
+              altitude: null,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+            },
+            timestamp: Date.now(),
+          } as GeolocationPosition),
+        watchPosition: () => 0,
+        clearWatch: () => undefined,
+      },
+    });
+  });
+  await mockAppApis(page, {
+    slice: { ...emptySlice(), meetings: [meeting()] },
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "use my location" }).click();
+  await expect(page.getByText("QA Online Meeting")).toBeVisible();
+  await expect(
+    page.getByText("Ask about listings in this area, or how meetings work."),
+  ).toBeVisible();
+
+  const chatRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === "/api/chat",
+  );
+  await page.getByLabel("Question").fill("beginners tonight");
+  await page.getByRole("button", { name: "ask", exact: true }).click();
+  const request = await chatRequest;
+  const body = request.postDataJSON() as {
+    geohash?: string;
+    lat?: number;
+    lng?: number;
+    meetings?: { feedId: string; slug: string; distanceKm: number }[];
+  };
+  expect(body.lat).toBeUndefined();
+  expect(body.lng).toBeUndefined();
+  expect(body.geohash).toEqual("gcpv");
+  expect(body.meetings).toEqual([
+    { feedId: "qa-feed", slug: "qa-online-meeting", distanceKm: 0 },
+  ]);
+  await expect(page.getByText("Ask is unavailable right now.")).toBeVisible();
+});
+
+test("ask panel works for help without a location", async ({ page }) => {
+  await mockAppApis(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "ask" })).toBeVisible();
+  await expect(
+    page.getByText("Help questions work now. Use Nearby or pick a city to ask about meetings."),
+  ).toBeVisible();
+  await page.getByLabel("Question").fill("what should I expect");
+  await page.getByRole("button", { name: "ask", exact: true }).click();
+  await expect(page.getByText("Ask is unavailable right now.")).toBeVisible();
 });
 
 test("loads the online meeting API without a live database", async ({ page }) => {
