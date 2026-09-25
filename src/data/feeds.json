@@ -278,6 +278,14 @@
     "regionHint": "GB"
   },
   {
+    "id": "bournemouth-aa",
+    "name": "Bournemouth & District AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/wp-content/uploads/2026/08/Print_27.8.26.pdf",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
     "id": "area59",
     "name": "Eastern Pennsylvania Area 59",
     "url": "https://area59aa.org/wp-admin/admin-ajax.php?action=meetings",

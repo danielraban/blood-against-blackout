@@ -5,5 +5,6 @@ import { asFeedFormat } from "./fellowship";
 test("feed formats include OIAA", () => {
   assert.equal(asFeedFormat("oiaa"), "oiaa");
   assert.equal(asFeedFormat("bmlt"), "bmlt");
+  assert.equal(asFeedFormat("aagb"), "aagb");
   assert.equal(asFeedFormat("nope"), "tsml");
 });

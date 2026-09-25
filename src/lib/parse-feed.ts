@@ -505,6 +505,10 @@ export function parseFeedMeetings(
   fellowship: Fellowship,
   format: FeedFormat,
 ): ParsedMeeting[] {
+  if (format === "aagb") {
+    const parsed = parseTsmlMeeting(raw, feedId, fellowship);
+    return parsed ? [parsed] : [];
+  }
   const useOiaa = format === "oiaa" || looksLikeOiaa(raw);
   if (useOiaa) {
     const parsed = parseOiaaMeeting(raw, feedId, fellowship);

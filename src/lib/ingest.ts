@@ -13,6 +13,8 @@ import {
   parseTsmlMeeting,
   type RawMeeting,
 } from "./parse-feed";
+import { parseAagbIntergroupHtml, parseAagbPrintText } from "./parse-aagb-intergroup";
+import { extractPdfText } from "./pdf-text";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { assertPublicHttpsUrl } from "./url-security";
@@ -81,6 +83,11 @@ export function parseRawMeeting(raw: RawMeeting, feedId: string) {
 const FEED_USER_AGENTS = [
   "blood-against-blackout/1.0 (meeting finder)",
   "Mozilla/5.0 (compatible; MeetingGuide; OpenChair)",
+];
+
+const AAGB_USER_AGENTS = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  ...FEED_USER_AGENTS,
 ];
 
 export const DEFAULT_INGEST_LIMIT = 20;
@@ -160,6 +167,66 @@ async function readMeetingJsonWithAgent(
       if (error instanceof Error && error.message === "Feed is not a JSON array") throw error;
       throw new Error("Feed did not return JSON");
     }
+  }
+  throw new Error("Feed redirect failed");
+}
+
+async function readAagbHtml(
+  url: string,
+  validators?: ConditionalHeaders,
+): Promise<FeedPayload> {
+  let lastError: Error = new Error("Feed fetch failed");
+  for (const userAgent of AAGB_USER_AGENTS) {
+    try {
+      return await readAagbHtmlWithAgent(url, userAgent, validators);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Feed fetch failed");
+    }
+  }
+  throw lastError;
+}
+
+async function readAagbHtmlWithAgent(
+  url: string,
+  userAgent: string,
+  validators?: ConditionalHeaders,
+): Promise<FeedPayload> {
+  let current = await assertPublicHttpsUrl(url);
+  for (let redirects = 0; redirects <= 3; redirects += 1) {
+    const headers: Record<string, string> = {
+      Accept: "application/pdf,text/html",
+      "User-Agent": userAgent,
+    };
+    if (validators?.etag) headers["If-None-Match"] = validators.etag;
+    if (validators?.lastModified) headers["If-Modified-Since"] = validators.lastModified;
+    const response = await fetch(current, {
+      headers,
+      cache: "no-store",
+      redirect: "manual",
+      signal: AbortSignal.timeout(60_000),
+    });
+    if (response.status === 304) return { status: "not-modified" };
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location || redirects === 3) throw new Error("Unsafe or excessive feed redirects");
+      current = await assertPublicHttpsUrl(new URL(location, current).toString());
+      continue;
+    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const asText = bytes.toString("utf8");
+    const meetings = asText.startsWith("%PDF")
+      ? parseAagbPrintText(extractPdfText(bytes))
+      : parseAagbIntergroupHtml(asText);
+    if (meetings.length < 10) {
+      throw new Error("Intergroup page did not include a meeting list");
+    }
+    return {
+      status: "ok",
+      meetings,
+      etag: response.headers.get("etag"),
+      lastModified: response.headers.get("last-modified"),
+    };
   }
   throw new Error("Feed redirect failed");
 }
@@ -731,14 +798,14 @@ async function ingestFeed(
   try {
     const fellowship = asFellowship(feed.fellowship);
     const format = asFeedFormat(feed.format);
-    const payload = await fetchJson(
-      feed.url,
-      {
-        etag: feed.etag,
-        lastModified: feed.lastModified,
-      },
-      format !== "oiaa",
-    );
+    const validators = {
+      etag: feed.etag,
+      lastModified: feed.lastModified,
+    };
+    const payload =
+      format === "aagb"
+        ? await readAagbHtml(feed.url, validators)
+        : await fetchJson(feed.url, validators, format !== "oiaa");
     if (payload.status === "not-modified") {
       await db
         .update(feeds)
