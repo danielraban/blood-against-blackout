@@ -207,3 +207,47 @@ test("the Bournemouth print list keeps postcodes and drops the closed meeting", 
   assert.equal(JSON.stringify(meetings).includes("65724729"), false);
   assert.equal(JSON.stringify(meetings).includes("08-92-99"), false);
 });
+
+test("East Kent cards keep Margate and skip an online listing without a link", () => {
+  const html = `
+    <h2>Meetings</h2>
+    <h3>Margate Sunrisers</h3>
+    <p>Monday / 07:00–08:00 / Saint John the Baptist &amp; Community Centre, Victoria Rd, Margate, CT9 1LN</p>
+    <h3>East Kent AA Online</h3>
+    <p>Tuesday / 19:00–20:00</p>
+    <p>Tuesday / 19:45–21:15 / The Focus Centre, 107 High St, Swanage, BH19 2NB</p>
+  `;
+  const meetings = parseAagbIntergroupHtml(html, {
+    entityName: "East Kent Intergroup",
+    entityUrl: "https://www.alcoholics-anonymous.org.uk/intergroups/east-kent-intergroup/",
+  }).flatMap((item) => parseFeedMeetings(item, "east-kent-aa", "aa", "aagb"));
+  assert.equal(meetings.length, 2);
+  const margate = meetings.find((meeting) => meeting.name === "Margate Sunrisers");
+  assert.equal(margate?.day, 1);
+  assert.equal(margate?.time, "07:00");
+  assert.equal(margate?.endTime, "08:00");
+  assert.equal(margate?.city, "Margate");
+  assert.equal(margate?.postalCode, "CT9 1LN");
+  assert.equal(margate?.entityName, "East Kent Intergroup");
+  const swanage = meetings.find((meeting) => meeting.city === "Swanage");
+  assert.equal(swanage?.name, "The Focus Centre");
+  assert.equal(swanage?.time, "19:45");
+  assert.equal(swanage?.endTime, "21:15");
+});
+
+test("card listings keep a saint place name when the slashes are markup", () => {
+  const html = `
+    <h3>St Peter Port Come &amp; Go</h3>
+    <p>Tuesday <span aria-hidden="true">/</span> 12:30–14:00 <span aria-hidden="true">/</span> Mind Centre, Arsenal Rd, St Peter Port, GY1 1UW</p>
+    <h3>ST MARTINS BIG BOOK STUDY</h3>
+    <p>Tuesday / 20:00–21:30 / Les Camps Methodist Church Hall, Grande Rue, ST MARTINS, GY4 6AA</p>
+  `;
+  const meetings = parseAagbIntergroupHtml(html).flatMap((item) =>
+    parseFeedMeetings(item, "guernsey-aa", "aa", "aagb"),
+  );
+  assert.equal(meetings.length, 2);
+  assert.equal(meetings[0]?.city, "St Peter Port");
+  assert.equal(meetings[0]?.postalCode, "GY1 1UW");
+  assert.equal(meetings[1]?.city, "St Martins");
+  assert.equal(meetings[1]?.postalCode, "GY4 6AA");
+});

@@ -280,10 +280,122 @@
   {
     "id": "bournemouth-aa",
     "name": "Bournemouth & District AA",
-    "url": "https://www.alcoholics-anonymous.org.uk/wp-content/uploads/2026/08/Print_27.8.26.pdf",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/bournemouth-district-intergroup/in-person-meetings/",
     "regionHint": "GB",
     "fellowship": "aa",
     "format": "aagb"
+  },
+  {
+    "id": "aa-south-west",
+    "name": "South West Region AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/regions/south-west-region/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb-region"
+  },
+  {
+    "id": "east-kent-aa",
+    "name": "East Kent AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/east-kent-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "cornwall-aa",
+    "name": "Cornwall AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/cornwall-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "devon-central-aa",
+    "name": "Devon Central AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/devon-central-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "south-devon-aa",
+    "name": "South Devon AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/south-devon-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "somerset-aa",
+    "name": "Somerset AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/somerset-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "west-dorset-aa",
+    "name": "West Dorset AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/west-dorset-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "jersey-aa",
+    "name": "Jersey AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/jersey-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "guernsey-aa",
+    "name": "Guernsey AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/guernsey-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "plymouth-aa",
+    "name": "Plymouth AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/plymouth-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "poole-aa",
+    "name": "Poole & District AA",
+    "url": "https://www.alcoholics-anonymous.org.uk/intergroups/poole-district-intergroup/",
+    "regionHint": "GB",
+    "fellowship": "aa",
+    "format": "aagb"
+  },
+  {
+    "id": "cauk-south",
+    "name": "C.A. South Central and Margate",
+    "url": "https://meetings.cocaineanonymous.org.uk/locations/",
+    "regionHint": "GB",
+    "fellowship": "ca",
+    "format": "cauk"
+  },
+  {
+    "id": "ukna-dorset",
+    "name": "NA Dorset",
+    "url": "https://meetings.ukna.org/meeting/search?county=Dorset&day=All&time=All&type=All",
+    "regionHint": "GB",
+    "fellowship": "na",
+    "format": "ukna"
+  },
+  {
+    "id": "ukna-kent",
+    "name": "NA Kent",
+    "url": "https://meetings.ukna.org/meeting/search?county=Kent&day=All&time=All&type=All",
+    "regionHint": "GB",
+    "fellowship": "na",
+    "format": "ukna"
   },
   {
     "id": "area59",

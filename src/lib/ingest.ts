@@ -13,9 +13,21 @@ import {
   parseTsmlMeeting,
   type RawMeeting,
 } from "./parse-feed";
-import { parseAagbIntergroupHtml, parseAagbPrintText } from "./parse-aagb-intergroup";
+import {
+  parseAagbIntergroupHtml,
+  parseAagbPrintText,
+  type AagbParseOptions,
+} from "./parse-aagb-intergroup";
+import {
+  aagbIntergroupHomes,
+  aagbIntergroupSlug,
+  aagbMeetingListLinks,
+  isBotChallenge,
+} from "./parse-aagb-index";
+import { parseCaukLocationsHtml } from "./parse-cauk-locations";
+import { parseUknaHtml } from "./parse-ukna";
 import { extractPdfText } from "./pdf-text";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { assertPublicHttpsUrl } from "./url-security";
 import {
@@ -102,6 +114,7 @@ type FeedPayload =
       meetings: RawMeeting[];
       etag: string | null;
       lastModified: string | null;
+      intergroups?: { id: string; name: string; url: string }[];
     };
 
 type ConditionalHeaders = {
@@ -174,11 +187,13 @@ async function readMeetingJsonWithAgent(
 async function readAagbHtml(
   url: string,
   validators?: ConditionalHeaders,
+  options: AagbParseOptions = {},
+  depth = 0,
 ): Promise<FeedPayload> {
   let lastError: Error = new Error("Feed fetch failed");
   for (const userAgent of AAGB_USER_AGENTS) {
     try {
-      return await readAagbHtmlWithAgent(url, userAgent, validators);
+      return await readAagbHtmlWithAgent(url, userAgent, validators, options, depth);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Feed fetch failed");
     }
@@ -189,12 +204,60 @@ async function readAagbHtml(
 async function readAagbHtmlWithAgent(
   url: string,
   userAgent: string,
-  validators?: ConditionalHeaders,
+  validators: ConditionalHeaders | undefined,
+  options: AagbParseOptions,
+  depth: number,
 ): Promise<FeedPayload> {
+  const document = await fetchFeedDocument(url, userAgent, validators, "application/pdf,text/html");
+  if (document.status === "not-modified") return document;
+  if (!document.body.startsWith("%PDF") && isBotChallenge(document.body)) {
+    throw new Error("Feed page is a bot challenge");
+  }
+  const meetings = document.body.startsWith("%PDF")
+    ? parseAagbPrintText(extractPdfText(document.bytes))
+    : parseAagbIntergroupHtml(document.body, options);
+  if (meetings.length === 0 && depth === 0) {
+    for (const child of aagbMeetingListLinks(document.body, document.finalUrl).slice(0, 3)) {
+      try {
+        const nested = await readAagbHtml(child, undefined, options, depth + 1);
+        if (nested.status === "ok" && nested.meetings.length > 0) return nested;
+      } catch {
+        continue;
+      }
+    }
+  }
+  if (meetings.length === 0) {
+    throw new Error("Intergroup page did not include a meeting list");
+  }
+  return {
+    status: "ok",
+    meetings,
+    etag: document.etag,
+    lastModified: document.lastModified,
+  };
+}
+
+type FeedDocument =
+  | { status: "not-modified" }
+  | {
+      status: "ok";
+      body: string;
+      bytes: Buffer;
+      etag: string | null;
+      lastModified: string | null;
+      finalUrl: string;
+    };
+
+async function fetchFeedDocument(
+  url: string,
+  userAgent: string,
+  validators: ConditionalHeaders | undefined,
+  accept: string,
+): Promise<FeedDocument> {
   let current = await assertPublicHttpsUrl(url);
   for (let redirects = 0; redirects <= 3; redirects += 1) {
     const headers: Record<string, string> = {
-      Accept: "application/pdf,text/html",
+      Accept: accept,
       "User-Agent": userAgent,
     };
     if (validators?.etag) headers["If-None-Match"] = validators.etag;
@@ -214,21 +277,104 @@ async function readAagbHtmlWithAgent(
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const bytes = Buffer.from(await response.arrayBuffer());
-    const asText = bytes.toString("utf8");
-    const meetings = asText.startsWith("%PDF")
-      ? parseAagbPrintText(extractPdfText(bytes))
-      : parseAagbIntergroupHtml(asText);
-    if (meetings.length < 10) {
-      throw new Error("Intergroup page did not include a meeting list");
-    }
     return {
       status: "ok",
-      meetings,
+      body: bytes.toString("utf8"),
+      bytes,
       etag: response.headers.get("etag"),
       lastModified: response.headers.get("last-modified"),
+      finalUrl: current.toString(),
     };
   }
   throw new Error("Feed redirect failed");
+}
+
+async function readIndexedHtml(
+  feed: ClaimedFeed,
+  format: "aagb-region" | "cauk" | "ukna",
+  validators?: ConditionalHeaders,
+): Promise<FeedPayload> {
+  let lastError: Error = new Error("Feed fetch failed");
+  for (const userAgent of AAGB_USER_AGENTS) {
+    try {
+      const document = await fetchFeedDocument(
+        feed.url,
+        userAgent,
+        validators,
+        "text/html,application/xhtml+xml",
+      );
+      if (document.status === "not-modified") return document;
+      if (isBotChallenge(document.body)) throw new Error("Feed page is a bot challenge");
+      return htmlMeetings(feed, format, document.body, document.etag, document.lastModified);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Feed fetch failed");
+    }
+  }
+  if (format === "ukna") {
+    const snapshot = readUknaSnapshot(feed.id);
+    if (snapshot) {
+      return htmlMeetings(feed, format, snapshot, null, null);
+    }
+  }
+  throw lastError;
+}
+
+function htmlMeetings(
+  feed: ClaimedFeed,
+  format: "aagb-region" | "cauk" | "ukna",
+  body: string,
+  etag: string | null,
+  lastModified: string | null,
+): FeedPayload {
+  if (format === "aagb-region") {
+    return {
+      status: "ok",
+      meetings: [],
+      etag,
+      lastModified,
+      intergroups: aagbIntergroupHomes(body, feed.url),
+    };
+  }
+  const meetings = format === "cauk" ? parseCaukLocationsHtml(body) : parseUknaHtml(body);
+  if (meetings.length === 0) throw new Error("Feed page did not include a meeting list");
+  return { status: "ok", meetings, etag, lastModified };
+}
+
+function readUknaSnapshot(feedId: string) {
+  const path = join(process.cwd(), "src/data/snapshots", `${feedId}.html`);
+  if (!existsSync(path)) return null;
+  return readFileSync(path, "utf8");
+}
+
+async function registerDiscoveredIntergroups(
+  discovered: { id: string; name: string; url: string }[],
+) {
+  if (!discovered.length) return;
+  const db = getDb();
+  const existing = await db.select({ url: feeds.url }).from(feeds);
+  const covered = new Set(
+    existing
+      .map((row) => aagbIntergroupSlug(row.url))
+      .filter((slug): slug is string => Boolean(slug)),
+  );
+  for (const intergroup of discovered) {
+    const slug = aagbIntergroupSlug(intergroup.url);
+    if (!slug || covered.has(slug)) continue;
+    covered.add(slug);
+    const url = canonicalFeedUrl(intergroup.url);
+    await db
+      .insert(feeds)
+      .values({
+        id: intergroup.id,
+        name: intergroup.name,
+        url,
+        regionHint: "GB",
+        fellowship: "aa",
+        format: "aagb",
+        status: "pending",
+      })
+      .onConflictDoNothing();
+  }
 }
 
 async function fetchJson(
@@ -804,8 +950,16 @@ async function ingestFeed(
     };
     const payload =
       format === "aagb"
-        ? await readAagbHtml(feed.url, validators)
-        : await fetchJson(feed.url, validators, format !== "oiaa");
+        ? await readAagbHtml(feed.url, validators, {
+            entityName: feed.name,
+            entityUrl: feed.url,
+          })
+        : format === "aagb-region" || format === "cauk" || format === "ukna"
+          ? await readIndexedHtml(feed, format, validators)
+          : await fetchJson(feed.url, validators, format !== "oiaa");
+    if (payload.status === "ok" && payload.intergroups?.length) {
+      await registerDiscoveredIntergroups(payload.intergroups);
+    }
     if (payload.status === "not-modified") {
       await db
         .update(feeds)
@@ -858,8 +1012,20 @@ async function ingestFeed(
     }
 
     const placed = borrowVenueCoordinates(parsed);
+    const geocodeAllPostcodes = format === "aagb" || format === "ukna";
     let geocodeBudget = 3;
-    let postcodeBudget = POSTCODE_GEOCODE_LIMIT;
+    let postcodeBudget = geocodeAllPostcodes
+      ? Math.max(
+          POSTCODE_GEOCODE_LIMIT,
+          new Set(
+            placed.flatMap((item) => {
+              const query = postcodeGeocodeQuery(item);
+              return query && item.lat == null && item.attendance !== "online" ? [query] : [];
+            }),
+          ).size,
+        )
+      : POSTCODE_GEOCODE_LIMIT;
+    let missedPostcodePins = 0;
     const cityGeo = new Map<string, { lat: number; lng: number }>();
     await geocodes.preload(uniqueGeocodeQueries(placed));
     const meetingRows: (typeof meetings.$inferInsert)[] = [];
@@ -889,6 +1055,8 @@ async function ingestFeed(
             lng = geo.lng;
             geohash4 = encodeGeohash4(geo.lat, geo.lng);
           }
+        } else if (known === undefined) {
+          missedPostcodePins += 1;
         }
       } else if (
         (lat == null || lng == null) &&
@@ -995,6 +1163,9 @@ async function ingestFeed(
       });
     }
     const uniqueMeetingRows = dedupeMeetingsBySlug(meetingRows);
+    if (missedPostcodePins > 0) {
+      throw new Error(`Feed left ${missedPostcodePins} meetings without coordinates`);
+    }
     if (parsed.length > 0 && uniqueMeetingRows.length === 0) {
       throw new Error("Feed parsed but produced no usable meetings");
     }

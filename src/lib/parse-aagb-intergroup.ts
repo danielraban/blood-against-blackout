@@ -1,5 +1,11 @@
 import { slugify } from "./utils";
 import type { RawMeeting } from "./parse-feed";
+import { formatUkCity, ukCityAndPostcode } from "./uk-place";
+
+export type AagbParseOptions = {
+  entityName?: string;
+  entityUrl?: string;
+};
 
 const WEEKDAYS = [
   "sunday",
@@ -32,7 +38,19 @@ const NAMED_ENTITIES: Record<string, string> = {
   hellip: "...",
 };
 
-export function parseAagbIntergroupHtml(html: string): RawMeeting[] {
+export function parseAagbIntergroupHtml(
+  html: string,
+  options: AagbParseOptions = {},
+): RawMeeting[] {
+  const meetings = hasWeekdayHeadings(html) ? parseWeekdayHtml(html) : parseCardHtml(html);
+  return meetings.map((meeting) => ({
+    ...meeting,
+    entity: options.entityName ?? meeting.entity,
+    entity_url: options.entityUrl ?? meeting.entity_url,
+  }));
+}
+
+function parseWeekdayHtml(html: string): RawMeeting[] {
   const meetings: RawMeeting[] = [];
   const sections = weekdaySections(html);
   for (const section of sections) {
@@ -42,6 +60,98 @@ export function parseAagbIntergroupHtml(html: string): RawMeeting[] {
     }
   }
   return meetings;
+}
+
+function hasWeekdayHeadings(html: string) {
+  return [...html.matchAll(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/gi)].some((heading) =>
+    WEEKDAYS.includes(textOf(heading[1] ?? "").toLowerCase()),
+  );
+}
+
+const CARD_LINE =
+  /^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s*\/\s*(\d{1,2}:\d{2})(?:\s*[–—-]\s*(\d{1,2}:\d{2}))?(?:\s*\/\s*(.+))?$/i;
+
+function parseCardHtml(html: string): RawMeeting[] {
+  const meetings: RawMeeting[] = [];
+  const headings = [...html.matchAll(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>/gi)];
+  if (!headings.length) {
+    for (const line of linesFromHtml(html)) {
+      const meeting = cardFromLine("", line);
+      if (meeting) meetings.push(meeting);
+    }
+    return meetings;
+  }
+  const preface = html.slice(0, headings[0]?.index ?? 0);
+  for (const line of linesFromHtml(preface)) {
+    const meeting = cardFromLine("", line);
+    if (meeting) meetings.push(meeting);
+  }
+  for (let index = 0; index < headings.length; index += 1) {
+    const heading = headings[index];
+    if (!heading || heading.index == null) continue;
+    const start = heading.index + heading[0].length;
+    const end = headings[index + 1]?.index ?? html.length;
+    const headingLines = linesFromHtml(heading[1] ?? "");
+    const lines = [...headingLines, ...linesFromHtml(html.slice(start, end))];
+    const cards = lines.filter((line) => CARD_LINE.test(line));
+    const name = headingLines.find((line) => !CARD_LINE.test(line)) ?? "";
+    cards.forEach((card, cardIndex) => {
+      const meeting = cardFromLine(cardIndex === 0 ? name : "", card);
+      if (meeting) meetings.push(meeting);
+    });
+  }
+  return meetings;
+}
+
+function cardFromLine(heading: string, line: string): RawMeeting | null {
+  if (/closed down|temporarily closed/i.test(`${heading} ${line}`)) return null;
+  const match = line.match(CARD_LINE);
+  if (!match) return null;
+  const day = WEEKDAYS.indexOf((match[1] ?? "").toLowerCase());
+  const time = clock24(match[2] ?? "");
+  if (day < 0 || !time) return null;
+  const address = tidy(match[4] ?? "");
+  if (!address) return null;
+  const place = ukCityAndPostcode(address);
+  const venue = tidy(address.split(",")[0] ?? "");
+  const name = tidy(heading) || (venue && !/^\d/.test(venue) ? venue : "Meeting");
+  return {
+    name,
+    slug: slugify(`${name} ${WEEKDAYS[day]} ${time}`),
+    day,
+    time,
+    end_time: match[3] ? clock24(match[3]) : null,
+    types: cardTypes(name),
+    location: venue && !/^\d/.test(venue) ? venue : name,
+    address,
+    city: place.city,
+    postal_code: place.postalCode,
+    country: "UK",
+    timezone: "Europe/London",
+    formatted_address: [address, "United Kingdom"].filter(Boolean).join(", "),
+    entity: ENTITY_NAME,
+    entity_url: ENTITY_URL,
+  };
+}
+
+function cardTypes(name: string) {
+  const types = ["C"];
+  if (/\bwomen\b/i.test(name)) types.push("W");
+  else if (/\bmen\b/i.test(name)) types.push("M");
+  if (/young persons?\b/i.test(name)) types.push("YP");
+  if (/\bbeginners?\b/i.test(name)) types.push("BE");
+  if (/big book/i.test(name)) types.push("B");
+  if (/\bsteps?\b/i.test(name)) types.push("ST");
+  return types;
+}
+
+function clock24(value: string) {
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 function weekdaySections(html: string) {
@@ -195,7 +305,7 @@ function cityFromAddress(address: string) {
   const dotted = last.match(/^(.*?)\.\s+([A-Za-z].*)$/);
   if (dotted?.[2]) last = tidy(dotted[2]).replace(/[.\s]+$/g, "");
   if (!last || isStreetish(last)) return null;
-  return last;
+  return formatUkCity(last) || null;
 }
 
 function locationFromAddress(address: string, name: string) {
