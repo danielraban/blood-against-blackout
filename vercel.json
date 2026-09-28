@@ -7,8 +7,8 @@
       "schedule": "7,22,37,52 * * * *"
     },
     {
-      "path": "/api/cron/embed-notes?limit=50",
-      "schedule": "11 * * * *"
+      "path": "/api/cron/embed-notes?limit=100",
+      "schedule": "11,26,41,56 * * * *"
     }
   ]
 }
