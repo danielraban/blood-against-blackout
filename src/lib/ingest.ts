@@ -1,7 +1,7 @@
 import { and, eq, inArray, lt, not, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "./db";
-import { cities, entities, feeds, geocodeCache, ingestCatalog, ingestRuns, meetings } from "./schema";
+import { entities, feeds, geocodeCache, ingestCatalog, ingestRuns, meetings } from "./schema";
 import { encodeGeohash4 } from "./geo";
 import { slugify } from "./utils";
 import { asFellowship, asFeedFormat } from "./fellowship";
@@ -40,6 +40,11 @@ import {
 import { applyRegionHint, isUsableCityLabel, locationNeedsEnrichment, normalizePlaceFields } from "./location";
 import { SOURCE_FRESHNESS_HOURS } from "./verification";
 import {
+  cityRebuildPlan,
+  rebuildCities,
+  rebuildCitiesForFeeds,
+} from "./ingest-cities";
+import {
   CITIES_CLEAN,
   CITIES_DIRTY,
   hashFeedCatalog,
@@ -66,6 +71,8 @@ import {
   enrichPlace,
   type PlaceEnrichmentBudget,
 } from "./canonicalize-place";
+
+export { rebuildCities };
 
 const feedsCatalogJson = readFileSync(join(process.cwd(), "src/data/feeds.json"), "utf8");
 const bmltCatalogJson = readFileSync(join(process.cwd(), "src/data/bmlt-servers.json"), "utf8");
@@ -605,179 +612,6 @@ export async function seedFeedCatalog(options: { force?: boolean } = {}) {
     });
 }
 
-export async function rebuildCities() {
-  const db = getDb();
-  await db.batch([
-    db.delete(cities),
-    db.execute(sql`
-      with eligible as (
-        select
-          m.*,
-          case when m.country is null then substring(m.geohash4 from 1 for 3) else '' end as identity_scope,
-          substring(m.geohash4 from 1 for 3) as geo_cluster
-        from meetings m
-        inner join feeds f on f.id = m.feed_id
-        where m.city is not null
-          and lower(m.city) not in ('online', 'virtual', 'regional')
-          and m.day is not null
-          and m.time is not null
-          and (
-            m.attendance = 'online'
-            or (
-              m.formatted_address is not null
-              and m.lat is not null
-              and m.lng is not null
-            )
-          )
-          and f.status = 'ok'
-          and f.last_ok_at >= now() - (${SOURCE_FRESHNESS_HOURS} * interval '1 hour')
-      ),
-      city_cluster_counts as (
-        select city, state, country, identity_scope, geo_cluster, count(*) as cluster_count
-        from eligible
-        where geo_cluster is not null
-        group by city, state, country, identity_scope, geo_cluster
-      ),
-      city_dominant as (
-        select city, state, country, identity_scope, geo_cluster
-        from (
-          select *, row_number() over (
-            partition by city, state, country, identity_scope
-            order by cluster_count desc, geo_cluster
-          ) as cluster_rank
-          from city_cluster_counts
-        ) ranked_clusters
-        where cluster_rank = 1
-      ),
-      neighborhood_cluster_counts as (
-        select neighborhood, city, state, country, identity_scope, geo_cluster, count(*) as cluster_count
-        from eligible
-        where geo_cluster is not null
-          and neighborhood is not null
-          and btrim(neighborhood) <> ''
-          and lower(neighborhood) <> lower(city)
-        group by neighborhood, city, state, country, identity_scope, geo_cluster
-      ),
-      neighborhood_dominant as (
-        select neighborhood, city, state, country, identity_scope, geo_cluster
-        from (
-          select *, row_number() over (
-            partition by neighborhood, city, state, country, identity_scope
-            order by cluster_count desc, geo_cluster
-          ) as cluster_rank
-          from neighborhood_cluster_counts
-        ) ranked_clusters
-        where cluster_rank = 1
-      ),
-      city_aggregated as (
-        select
-          trim(both '-' from regexp_replace(lower(e.city), '[^[:alnum:]]+', '-', 'g'))
-            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.state), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
-            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.country), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
-            || case when e.country is null then '-' || coalesce(e.identity_scope, 'geo') else '' end as slug,
-          e.city as label,
-          null::text as parent_label,
-          array[e.city]::text[] as aliases,
-          e.state,
-          e.country,
-          coalesce(
-            avg(e.lat) filter (where e.attendance = 'in-person'),
-            avg(e.lat)
-          )::real as lat,
-          coalesce(
-            avg(e.lng) filter (where e.attendance = 'in-person'),
-            avg(e.lng)
-          )::real as lng,
-          coalesce(
-            mode() within group (order by e.geohash4) filter (where e.attendance = 'in-person'),
-            mode() within group (order by e.geohash4)
-          ) as geohash4,
-          count(*)::int as meeting_count
-        from eligible e
-        inner join city_dominant d
-          on d.city = e.city
-          and d.state is not distinct from e.state
-          and d.country is not distinct from e.country
-          and d.identity_scope = e.identity_scope
-          and d.geo_cluster = e.geo_cluster
-        group by e.city, e.state, e.country, e.identity_scope
-      ),
-      neighborhood_aggregated as (
-        select
-          trim(both '-' from regexp_replace(lower(e.neighborhood), '[^[:alnum:]]+', '-', 'g'))
-            || '-' || trim(both '-' from regexp_replace(lower(e.city), '[^[:alnum:]]+', '-', 'g'))
-            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.state), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
-            || '-' || coalesce(nullif(trim(both '-' from regexp_replace(lower(e.country), '[^[:alnum:]]+', '-', 'g')), ''), 'xx')
-            || case when e.country is null then '-' || coalesce(e.identity_scope, 'geo') else '' end as slug,
-          e.neighborhood as label,
-          e.city as parent_label,
-          array[
-            e.neighborhood,
-            e.city,
-            e.neighborhood || ', ' || e.city
-          ]::text[] as aliases,
-          e.state,
-          e.country,
-          coalesce(
-            avg(e.lat) filter (where e.attendance = 'in-person'),
-            avg(e.lat)
-          )::real as lat,
-          coalesce(
-            avg(e.lng) filter (where e.attendance = 'in-person'),
-            avg(e.lng)
-          )::real as lng,
-          coalesce(
-            mode() within group (order by e.geohash4) filter (where e.attendance = 'in-person'),
-            mode() within group (order by e.geohash4)
-          ) as geohash4,
-          count(*)::int as meeting_count
-        from eligible e
-        inner join neighborhood_dominant d
-          on d.neighborhood = e.neighborhood
-          and d.city = e.city
-          and d.state is not distinct from e.state
-          and d.country is not distinct from e.country
-          and d.identity_scope = e.identity_scope
-          and d.geo_cluster = e.geo_cluster
-        group by e.neighborhood, e.city, e.state, e.country, e.identity_scope
-      ),
-      aggregated as (
-        select * from city_aggregated
-        union all
-        select * from neighborhood_aggregated
-      ),
-      unique_places as (
-        select *
-        from (
-          select *, row_number() over (
-            partition by
-              label,
-              coalesce(state, ''),
-              coalesce(country, ''),
-              geohash4
-            order by
-              case when parent_label is null then 0 else 1 end,
-              meeting_count desc,
-              slug
-          ) as place_rank
-          from aggregated
-        ) places
-        where place_rank = 1
-      ),
-      ranked as (
-        select *, row_number() over (
-          partition by slug order by meeting_count desc, label
-        ) as rank
-        from unique_places
-      )
-      insert into cities (slug, label, state, country, lat, lng, geohash4, meeting_count, parent_label, aliases)
-      select slug, label, state, country, lat, lng, geohash4, meeting_count, parent_label, aliases
-      from ranked
-      where rank = 1
-    `),
-  ]);
-}
-
 type IngestStats = {
   feedsClaimed: number;
   feedsProcessed: number;
@@ -838,10 +672,6 @@ async function setCitiesMarker(contentHash: string) {
       target: ingestCatalog.id,
       set: { contentHash, seededAt: new Date() },
     });
-}
-
-function markCitiesDirty() {
-  return setCitiesMarker(CITIES_DIRTY);
 }
 
 function markCitiesClean() {
@@ -1302,6 +1132,7 @@ async function runIngest(options: {
   const startedAt = new Date();
   let runId: number | undefined;
   let failure: unknown;
+  const writtenFeedIds = new Set<string>();
   try {
     runId = await openIngestRun(startedAt);
     while (Date.now() < deadline) {
@@ -1326,6 +1157,7 @@ async function runIngest(options: {
             geocodes,
           );
           mergeIngestStats(stats, localStats);
+          if (localStats.feedsWritten > 0) writtenFeedIds.add(feed.id);
         },
         () => Date.now() < deadline,
       );
@@ -1335,10 +1167,13 @@ async function runIngest(options: {
       }
       if (options.once || stats.budgetExhausted > 0) break;
     }
-    if (stats.feedsWritten > 0 || (await citiesAreDirty())) {
-      if (stats.feedsWritten > 0) await markCitiesDirty();
+    const dirty = await citiesAreDirty();
+    const plan = cityRebuildPlan(dirty, [...writtenFeedIds]);
+    if (plan.mode === "full") {
       await rebuildCities();
       await markCitiesClean();
+    } else if (plan.mode === "incremental") {
+      await rebuildCitiesForFeeds(plan.feedIds);
     }
   } catch (error) {
     failure = error;
