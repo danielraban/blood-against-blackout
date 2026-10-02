@@ -3,6 +3,7 @@ import { allowedMeetingKeys, meetingKey } from "./chat-meetings";
 import type { ChatMeetingRef } from "./chat-request";
 
 export const MAX_NOTE_HITS = 5;
+export const FINDER_NOTE_HITS = 12;
 export const NOTE_SIMILARITY_MIN = 0.3;
 
 export type NoteEmbeddingRow = {
@@ -28,6 +29,7 @@ export function rankNoteHits(
   queryEmbedding: number[],
   rows: NoteEmbeddingRow[],
   allowed: ChatMeetingRef[],
+  limit = MAX_NOTE_HITS,
 ): NoteHit[] {
   const keys = allowedMeetingKeys(allowed);
   return rows
@@ -43,5 +45,5 @@ export function rankNoteHits(
     }))
     .filter((hit) => hit.score >= NOTE_SIMILARITY_MIN)
     .sort((left, right) => right.score - left.score)
-    .slice(0, MAX_NOTE_HITS);
+    .slice(0, limit);
 }

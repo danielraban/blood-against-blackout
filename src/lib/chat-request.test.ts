@@ -7,6 +7,7 @@ import {
   containsCoordinateFields,
   isChatBodyTooLarge,
   parseChatRequest,
+  parseNotesSearchRequest,
 } from "./chat-request";
 
 const messages = [{ role: "user", parts: [{ type: "text", text: "hello" }] }];
@@ -70,6 +71,26 @@ test("rejects oversized chat payloads", () => {
         slug: `meeting-${index}`,
         distanceKm: 1,
       })),
+    }).ok,
+    false,
+  );
+});
+
+test("notes search reuses the chat allow-list and rejects coordinates", () => {
+  const parsed = parseNotesSearchRequest({
+    query: "wheelchair",
+    geohash: "gcpv",
+    meetings: [{ feedId: "qa-feed", slug: "qa-meeting", distanceKm: 1 }],
+  });
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.value.query, "wheelchair");
+  assert.equal(parsed.value.geohash, "gcpv");
+  assert.equal(
+    parseNotesSearchRequest({
+      query: "wheelchair",
+      lat: 51.5,
+      meetings: [{ feedId: "qa-feed", slug: "qa-meeting", distanceKm: 1 }],
     }).ok,
     false,
   );

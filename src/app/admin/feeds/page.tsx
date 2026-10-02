@@ -31,6 +31,8 @@ type Audit = {
   staleFeeds: number;
   suppressedMeetings: number;
   incompleteRuns: number;
+  notesMissingBeginnerType: number;
+  notesMissingWheelchairType: number;
   mappingAnomalies: Array<{
     city: string;
     state: string | null;
@@ -131,7 +133,9 @@ export default function AdminFeedsPage() {
           </p>
           <p>
             Mapping anomalies {audit.mappingAnomalies.length} · incomplete runs{" "}
-            {audit.incompleteRuns}
+            {audit.incompleteRuns} · notes missing beginner type{" "}
+            {audit.notesMissingBeginnerType} · notes missing wheelchair type{" "}
+            {audit.notesMissingWheelchairType}
           </p>
           <p className="text-muted">
             Checked {new Date(audit.checkedAt).toLocaleString()} · sources expire

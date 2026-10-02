@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ComicStrip } from "@/components/comic-strip";
+import { READING_FELLOWSHIPS, READING_HEADING, READINGS } from "@/lib/readings";
 
 export default function ResourcesPage() {
   const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
@@ -8,8 +9,8 @@ export default function ResourcesPage() {
       <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">resources</h1>
       <ComicStrip compact />
       <p className="text-muted">
-        Original guidance for finding a meeting. This is not A.A., N.A., or C.A.
-        literature.
+        Original guidance for finding a meeting. We do not republish
+        conference-approved readings; they open on the fellowships&apos; sites.
       </p>
       <section className="space-y-2 border-4 border-black bg-warn p-4 text-black">
         <h2 className="font-display text-xl lowercase">if this is an emergency</h2>
@@ -19,6 +20,23 @@ export default function ResourcesPage() {
           In the U.S. or Canada, call or text 988. In the UK or Republic of
           Ireland, Samaritans can be reached at 116 123.
         </p>
+      </section>
+      <section className="space-y-4">
+        <h2 className="text-xl font-medium lowercase">readings</h2>
+        {READING_FELLOWSHIPS.map((fellowship) => (
+          <div key={fellowship} className="space-y-2">
+            <h3 className="text-lg font-medium lowercase">{READING_HEADING[fellowship]}</h3>
+            <ul className="list-disc space-y-1 pl-5">
+              {READINGS.filter((reading) => reading.fellowship === fellowship).map((reading) => (
+                <li key={reading.href}>
+                  <a className="underline" href={reading.href} rel="noreferrer" target="_blank">
+                    {reading.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </section>
       <section className="space-y-2">
         <h2 className="text-xl font-medium lowercase">what to expect</h2>

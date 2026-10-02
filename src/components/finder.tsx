@@ -27,7 +27,8 @@ import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
 import { AskPanel } from "@/components/ask-panel";
 import { ComicStrip } from "@/components/comic-strip";
 import { OfficialLocators } from "@/components/official-locators";
-import { meetingRefsForChat } from "@/lib/chat-meetings";
+import { meetingKey, meetingRefsForChat } from "@/lib/chat-meetings";
+import { mergeAskFilters } from "@/lib/chat-ui";
 import { cn } from "@/lib/utils";
 import { Map, SlidersHorizontal, X } from "lucide-react";
 
@@ -67,6 +68,7 @@ export function Finder({
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const [geohash, setGeohash] = useState(params.get("gh"));
+  const [noteKeys, setNoteKeys] = useState<ReadonlySet<string>>(new Set());
   const [slice, setSlice] = useState<SlicePayload | null>(() =>
     initialMeetings
       ? {
@@ -252,9 +254,79 @@ export function Finder({
     [filters.radiusKm, meetings, origin],
   );
   const { groups, count } = useMemo(
-    () => filterAndGroup(meetings, filters, origin),
-    [meetings, filters, origin],
+    () =>
+      filterAndGroup(
+        meetings,
+        filters,
+        origin,
+        new Date(),
+        filters.query.trim().length >= 3 && chatMeetings.length > 0
+          ? noteKeys
+          : undefined,
+      ),
+    [chatMeetings.length, meetings, filters, origin, noteKeys],
   );
+  const askListed = useMemo(() => {
+    const ranked = filterAndGroup(
+      meetings,
+      {
+        ...DEFAULT_FILTERS,
+        day: "any",
+        week: true,
+        radiusKm: filters.radiusKm,
+      },
+      origin,
+    );
+    return [
+      ...ranked.groups.happening,
+      ...ranked.groups.soon,
+      ...ranked.groups.later,
+      ...ranked.groups.week,
+      ...ranked.groups.other,
+    ];
+  }, [filters.radiusKm, meetings, origin]);
+
+  useEffect(() => {
+    const query = filters.query.trim();
+    if (query.length < 3 || chatMeetings.length === 0) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch("/api/notes-search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query,
+              geohash: mode === "nearby" ? geohash : null,
+              citySlug: selectedCity?.slug ?? null,
+              meetings: chatMeetings,
+            }),
+            signal: controller.signal,
+          });
+          if (!response.ok) {
+            setNoteKeys(new Set());
+            return;
+          }
+          const data = (await response.json()) as {
+            hits?: { feedId: string; slug: string }[];
+          };
+          setNoteKeys(
+            new Set(
+              (data.hits ?? []).map((hit) => meetingKey(hit.feedId, hit.slug)),
+            ),
+          );
+        } catch {
+          if (!controller.signal.aborted) setNoteKeys(new Set());
+        }
+      })();
+    }, 400);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [chatMeetings, filters.query, geohash, mode, selectedCity?.slug]);
+
   const flat: RankedMeeting[] = [
     ...groups.happening,
     ...groups.soon,
@@ -485,6 +557,10 @@ export function Finder({
         geohash={mode === "nearby" ? geohash : null}
         citySlug={selectedCity?.slug}
         meetings={chatMeetings}
+        listed={askListed}
+        onFilters={(incoming) =>
+          setFilters((current) => mergeAskFilters(current, incoming))
+        }
       />
 
       {canSearchMeetings ? (

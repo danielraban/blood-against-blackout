@@ -43,6 +43,24 @@ test("a line-broken London address keeps the municipality, neighborhood, and pos
   );
 });
 
+test("TSML notes with beginners welcome add BE and keep the published notes", () => {
+  const meeting = parseTsmlMeeting(
+    {
+      name: "Newcomers",
+      slug: "newcomers",
+      day: 1,
+      time: "19:00",
+      types: ["O"],
+      notes: "Beginners welcome",
+      formatted_address: "10 High Street, London, UK",
+    },
+    "feed",
+    "aa",
+  );
+  assert.deepEqual(meeting?.types, ["O", "BE"]);
+  assert.equal(meeting?.notes, "Beginners welcome");
+});
+
 test("TSML region is not incorrectly used as the city", () => {
   const meeting = parseTsmlMeeting(
     {

@@ -3,6 +3,7 @@ import { slugify } from "./utils";
 import type { Attendance } from "./types";
 import type { FeedFormat, Fellowship } from "./fellowship";
 import { isValidTimeZone } from "./timezone";
+import { mergeNoteTypes } from "./note-types";
 import {
   cleanLocationPart,
   collapseAddressWhitespace,
@@ -283,7 +284,7 @@ export function parseOiaaMeeting(
       .filter(Boolean)
       .join("\n") || null;
 
-  return {
+  return applyNoteTypes({
     feedId,
     slug: slug.slice(0, 64),
     name: name.slice(0, 255),
@@ -317,7 +318,7 @@ export function parseOiaaMeeting(
     entityUrl: "https://aa-intergroup.org/meetings/",
     entityLocation: null,
     feedbackEmails: asStringArray(raw.groupEmail),
-  };
+  });
 }
 
 export function asMeetingArray(data: unknown): RawMeeting[] {
@@ -389,7 +390,7 @@ export function parseTsmlMeeting(
     country,
   });
 
-  return {
+  return applyNoteTypes({
     feedId,
     slug: slug.slice(0, 64),
     name: name.slice(0, 255),
@@ -421,7 +422,7 @@ export function parseTsmlMeeting(
     entityUrl: asString(raw.entity_url),
     entityLocation: asString(raw.entity_location),
     feedbackEmails: asStringArray(raw.feedback_emails),
-  };
+  });
 }
 
 export function parseBmltMeeting(
@@ -464,7 +465,7 @@ export function parseBmltMeeting(
   const lat = asNumber(raw.latitude);
   const lng = asNumber(raw.longitude);
 
-  return {
+  return applyNoteTypes({
     feedId,
     slug: slugify(`${id}-${name}`).slice(0, 64),
     name: name.slice(0, 255),
@@ -496,7 +497,7 @@ export function parseBmltMeeting(
     entityUrl: asString(raw.root_server_uri),
     entityLocation: place.city,
     feedbackEmails: [],
-  };
+  });
 }
 
 export function parseFeedMeetings(
@@ -563,4 +564,11 @@ export function bmltSearchUrl(root: string) {
 export function bmltInfoUrl(root: string) {
   const base = root.endsWith("/") ? root : `${root}/`;
   return `${base}client_interface/json/?switcher=GetServerInfo`;
+}
+
+function applyNoteTypes(meeting: ParsedMeeting): ParsedMeeting {
+  return {
+    ...meeting,
+    types: mergeNoteTypes(meeting.types, meeting.notes, meeting.locationNotes),
+  };
 }

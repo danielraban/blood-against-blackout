@@ -3,8 +3,7 @@ import { z } from "zod";
 import type { ChatMeetingRef } from "./chat-request";
 import { searchAllowedMeetings } from "./chat-meetings";
 import { loadAllowedMeetings, searchAllowedNotes } from "./chat-lookup";
-import { FILTER_TYPE_CODES } from "./spec";
-import type { SearchFilters } from "./types";
+import { parseMeetingFilters } from "./chat-ui";
 
 const NO_AREA =
   "No area is loaded. Ask the user to use Nearby or pick a city.";
@@ -36,18 +35,7 @@ export function createChatTools(allowed: ChatMeetingRef[]) {
         if (allowed.length === 0) {
           return { meetings: [], notice: NO_AREA };
         }
-        const filters: Partial<SearchFilters> = {
-          fellowship: input.fellowship,
-          attendance: input.attendance,
-          day: input.day,
-          timeWindow: input.timeWindow,
-          openClosed: input.openClosed,
-          types: input.types?.filter((code): code is (typeof FILTER_TYPE_CODES)[number] =>
-            (FILTER_TYPE_CODES as readonly string[]).includes(code),
-          ),
-          query: input.query,
-          week: input.week,
-        };
+        const filters = parseMeetingFilters(input);
         const meetings = searchAllowedMeetings(
           await loadAllowedMeetings(allowed),
           allowed,

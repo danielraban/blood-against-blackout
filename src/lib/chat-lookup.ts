@@ -102,6 +102,7 @@ export async function loadAllowedNoteRows(allowed: ChatMeetingRef[]) {
 export async function searchAllowedNotes(
   query: string,
   allowed: ChatMeetingRef[],
+  limit?: number,
 ) {
   if (allowed.length === 0 || !query.trim()) return [];
   const { embedding } = await embed({
@@ -112,5 +113,5 @@ export async function searchAllowedNotes(
     },
   });
   const rows = await loadAllowedNoteRows(allowed);
-  return rankNoteHits(embedding, rows, allowed);
+  return rankNoteHits(embedding, rows, allowed, limit);
 }

@@ -13,6 +13,8 @@ type CountRow = {
   stale_feeds: number | string;
   suppressed_meetings: number | string;
   incomplete_runs: number | string;
+  notes_missing_beginner_type: number | string;
+  notes_missing_wheelchair_type: number | string;
 };
 
 export type MappingAnomaly = {
@@ -38,6 +40,8 @@ export type MeetingAudit = {
   staleFeeds: number;
   suppressedMeetings: number;
   incompleteRuns: number;
+  notesMissingBeginnerType: number;
+  notesMissingWheelchairType: number;
   mappingAnomalies: MappingAnomaly[];
 };
 
@@ -95,7 +99,17 @@ export async function runMeetingAudit(): Promise<MeetingAudit> {
         ) duplicates)::int as duplicate_meeting_ids,
         (select count(*) from feeds where status <> 'ok' or last_ok_at is null or last_ok_at < now() - (${SOURCE_FRESHNESS_HOURS} * interval '1 hour'))::int as stale_feeds,
         (select coalesce(sum(meeting_count), 0) from feeds where status <> 'ok' or last_ok_at is null or last_ok_at < now() - (${SOURCE_FRESHNESS_HOURS} * interval '1 hour'))::int as suppressed_meetings,
-        (select count(*) from ingest_runs where status in ('running', 'incomplete'))::int as incomplete_runs
+        (select count(*) from ingest_runs where status in ('running', 'incomplete'))::int as incomplete_runs,
+        (select count(*) from public_rows
+          where (coalesce(notes, '') ~* 'beginners? welcome'
+            or coalesce(location_notes, '') ~* 'beginners? welcome')
+            and not ('BE' = any(types) or 'B' = any(types))
+        )::int as notes_missing_beginner_type,
+        (select count(*) from public_rows
+          where (coalesce(notes, '') ~* 'wheelchair accessible'
+            or coalesce(location_notes, '') ~* 'wheelchair accessible')
+            and not ('X' = any(types))
+        )::int as notes_missing_wheelchair_type
     `),
     db.execute(sql`
       with eligible as (
@@ -187,6 +201,8 @@ export async function runMeetingAudit(): Promise<MeetingAudit> {
     staleFeeds: count(row?.stale_feeds),
     suppressedMeetings: count(row?.suppressed_meetings),
     incompleteRuns: count(row?.incomplete_runs),
+    notesMissingBeginnerType: count(row?.notes_missing_beginner_type),
+    notesMissingWheelchairType: count(row?.notes_missing_wheelchair_type),
     mappingAnomalies,
     safe: false,
   };

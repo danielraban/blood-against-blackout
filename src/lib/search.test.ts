@@ -60,6 +60,31 @@ test("meeting search matches words across fields and type codes", () => {
   assert.equal(search("Oxford ONL"), 1);
 });
 
+test("semantic note keys include meetings the keyword query would miss", () => {
+  const hidden = {
+    ...meeting,
+    slug: "ramp-group",
+    name: "Quiet Room",
+    notes: "Use the side door",
+  };
+  const result = filterAndGroup(
+    [hidden],
+    { ...DEFAULT_FILTERS, day: "any", week: true, query: "wheelchair" },
+    null,
+    new Date(),
+    new Set(["feed:ramp-group"]),
+  );
+  assert.equal(result.count, 1);
+  assert.equal(
+    filterAndGroup(
+      [hidden],
+      { ...DEFAULT_FILTERS, day: "any", week: true, query: "wheelchair" },
+      null,
+    ).count,
+    0,
+  );
+});
+
 test("duplicate listings of the same meeting are collapsed", () => {
   const result = filterAndGroup(
     [

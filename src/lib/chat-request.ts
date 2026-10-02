@@ -120,3 +120,37 @@ export function parseChatRequest(body: unknown): ChatRequestResult {
     value: { messages, geohash, citySlug, meetings },
   };
 }
+
+export type NotesSearchRequest = {
+  query: string;
+  geohash: string | null;
+  citySlug: string | null;
+  meetings: ChatMeetingRef[];
+};
+
+export function parseNotesSearchRequest(body: unknown):
+  | { ok: true; value: NotesSearchRequest }
+  | { ok: false; error: string; status: number } {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { ok: false, error: "Invalid request", status: 400 };
+  }
+  const record = body as Record<string, unknown>;
+  const query = asTrimmedString(record.query);
+  if (query.length < 2 || query.length > 160) {
+    return { ok: false, error: "Invalid query", status: 400 };
+  }
+  const parsed = parseChatRequest({
+    ...record,
+    messages: [{ role: "user", parts: [{ type: "text", text: query }] }],
+  });
+  if (!parsed.ok) return parsed;
+  return {
+    ok: true,
+    value: {
+      query,
+      geohash: parsed.value.geohash,
+      citySlug: parsed.value.citySlug,
+      meetings: parsed.value.meetings,
+    },
+  };
+}

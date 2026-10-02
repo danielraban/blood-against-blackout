@@ -155,6 +155,7 @@ export function filterAndGroup(
   filters: SearchFilters,
   origin: { lat: number; lng: number } | null,
   now = new Date(),
+  extraQueryKeys?: ReadonlySet<string>,
 ): { groups: Record<MeetingGroupKey, RankedMeeting[]>; count: number } {
   const originZone = origin
     ? timezoneFromCoords(origin.lat, origin.lng)
@@ -211,7 +212,10 @@ export function filterAndGroup(
       ]
         .filter((value): value is string => Boolean(value));
       const hay = normalizeSearchText(searchableValues.join(" "));
-      if (!terms.every((term) => hay.includes(term))) continue;
+      const keywordHit = terms.every((term) => hay.includes(term));
+      const semanticHit =
+        extraQueryKeys?.has(`${meeting.feedId}:${meeting.slug}`) ?? false;
+      if (!keywordHit && !semanticHit) continue;
     }
 
     const start = parseMinutes(meeting.time);

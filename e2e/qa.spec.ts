@@ -86,6 +86,9 @@ async function mockAppApis(
     if (url.pathname === "/api/chat") {
       return route.fulfill({ status: 503, json: { error: "Ask is unavailable" } });
     }
+    if (url.pathname === "/api/notes-search") {
+      return route.fulfill({ json: { hits: [] } });
+    }
     return route.fulfill({ status: 404, json: { error: "unmocked" } });
   });
 }
@@ -253,6 +256,8 @@ test("ask panel sends geohash and meeting ids after a location, never coordinate
   await expect(
     page.getByText("Ask about listings in this area, or how meetings work."),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "beginners tonight" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "door code" })).toBeVisible();
 
   const chatRequest = page.waitForRequest((request) =>
     new URL(request.url()).pathname === "/api/chat",
@@ -282,6 +287,8 @@ test("ask panel works for help without a location", async ({ page }) => {
   await expect(
     page.getByText("Help questions work now. Use Nearby or pick a city to ask about meetings."),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "what should I expect" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "beginners tonight" })).toHaveCount(0);
   await page.getByLabel("Question").fill("what should I expect");
   await page.getByRole("button", { name: "ask", exact: true }).click();
   await expect(page.getByText("Ask is unavailable right now.")).toBeVisible();
@@ -335,7 +342,25 @@ test("restores saved places from IndexedDB", async ({ page }) => {
   await expect(page.getByRole("link", { name: /home London/ })).toBeVisible();
 });
 
-for (const path of ["/", "/online", "/saved"]) {
+test("resources lists official readings links", async ({ page }) => {
+  await mockAppApis(page);
+  await page.goto("/resources");
+  await expect(page.getByRole("heading", { name: "readings" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "A.A. Preamble" })).toHaveAttribute(
+    "href",
+    "https://www.aa.org/aa-preamble",
+  );
+  await expect(page.getByRole("link", { name: "Who, What, How, and Why" })).toHaveAttribute(
+    "href",
+    "https://na.org/e-lit/ip-1-who-what-how-and-why/",
+  );
+  await expect(page.getByRole("link", { name: "What is C.A.?" })).toHaveAttribute(
+    "href",
+    "https://ca.org/literature/what-is-ca/",
+  );
+});
+
+for (const path of ["/", "/online", "/saved", "/resources"]) {
   test(`${path} has no serious automated accessibility violations`, async ({ page }) => {
     await mockAppApis(page);
     await page.goto(path);
