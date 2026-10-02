@@ -18,7 +18,7 @@ const COUNTRY_ALIASES: Record<string, string> = {
   IRELAND: "IE",
 };
 
-const GENERIC_CITY_LABELS = new Set(["online", "virtual", "regional"]);
+const GENERIC_CITY_LABELS = new Set(["online", "virtual", "regional", "tbd"]);
 
 const STATE_CODES = new Set([
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA",
@@ -35,6 +35,7 @@ const CITY_ALIASES: Record<string, string> = {
   nyc: "New York",
   "new york city": "New York",
   "the bronx": "Bronx",
+  okc: "Oklahoma City",
 };
 
 const KNOWN_MUNICIPALITIES = new Set([

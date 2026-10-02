@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, not, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { getDb } from "./db";
 import { cities, entities, feeds, geocodeCache, ingestCatalog, ingestRuns, meetings } from "./schema";
@@ -1191,7 +1191,19 @@ async function ingestFeed(
           }),
       );
     }
-    operations.push(db.delete(meetings).where(eq(meetings.feedId, feed.id)));
+    const keptSlugs = uniqueMeetingRows.map((row) => row.slug);
+    operations.push(
+      keptSlugs.length === 0
+        ? db.delete(meetings).where(eq(meetings.feedId, feed.id))
+        : db
+            .delete(meetings)
+            .where(
+              and(
+                eq(meetings.feedId, feed.id),
+                not(inArray(meetings.slug, keptSlugs)),
+              ),
+            ),
+    );
     for (let i = 0; i < uniqueMeetingRows.length; i += chunkSize) {
       const chunk = uniqueMeetingRows.slice(i, i + chunkSize);
       operations.push(

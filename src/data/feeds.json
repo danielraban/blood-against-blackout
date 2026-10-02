@@ -9,13 +9,15 @@
     "id": "aasfmarin",
     "name": "San Francisco / Marin",
     "url": "https://aasfmarin.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "aasantacruz",
     "name": "Santa Cruz",
     "url": "https://aasantacruz.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "atlantaaa",
@@ -33,19 +35,22 @@
     "id": "aapdx",
     "name": "Portland Oregon",
     "url": "https://www.pdxaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-OR"
+    "regionHint": "US-OR",
+    "status": "disabled"
   },
   {
     "id": "austinaa",
     "name": "Austin",
     "url": "https://austinaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-TX"
+    "regionHint": "US-TX",
+    "status": "disabled"
   },
   {
     "id": "aasanjose",
     "name": "San Jose",
     "url": "https://aasanjose.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "eastbayaa",
@@ -63,13 +68,15 @@
     "id": "lacoaa",
     "name": "Los Angeles Central Office",
     "url": "https://lacoaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "aaboston",
     "name": "Boston",
     "url": "https://aaboston.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MA"
+    "regionHint": "US-MA",
+    "status": "disabled"
   },
   {
     "id": "nyintergroup",
@@ -81,7 +88,8 @@
     "id": "chicagoaa",
     "name": "Chicago",
     "url": "https://chicagoaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-IL"
+    "regionHint": "US-IL",
+    "status": "disabled"
   },
   {
     "id": "denveraa",
@@ -99,7 +107,8 @@
     "id": "aadallas",
     "name": "Dallas",
     "url": "https://aadallas.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-TX"
+    "regionHint": "US-TX",
+    "status": "disabled"
   },
   {
     "id": "aasanantonio",
@@ -111,19 +120,22 @@
     "id": "miami-aa",
     "name": "Miami",
     "url": "https://www.aamiami.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-FL"
+    "regionHint": "US-FL",
+    "status": "disabled"
   },
   {
     "id": "tampa-aa",
     "name": "Tampa",
     "url": "https://aatampa-area.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-FL"
+    "regionHint": "US-FL",
+    "status": "disabled"
   },
   {
     "id": "orlandoaa",
     "name": "Orlando",
     "url": "https://orlandocentraloffice.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-FL"
+    "regionHint": "US-FL",
+    "status": "disabled"
   },
   {
     "id": "aa-dc",
@@ -135,25 +147,29 @@
     "id": "aabaltimore",
     "name": "Baltimore",
     "url": "https://baltimoreaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MD"
+    "regionHint": "US-MD",
+    "status": "disabled"
   },
   {
     "id": "aaphiladelphia",
     "name": "Philadelphia",
     "url": "https://www.aaphiladelphia.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-PA"
+    "regionHint": "US-PA",
+    "status": "disabled"
   },
   {
     "id": "minneapolis",
     "name": "Minneapolis",
     "url": "https://aaminnesota.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MN"
+    "regionHint": "US-MN",
+    "status": "disabled"
   },
   {
     "id": "detroit",
     "name": "Detroit",
     "url": "https://aa-semi.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-MI"
+    "regionHint": "US-MI",
+    "status": "disabled"
   },
   {
     "id": "stlouis",
@@ -171,7 +187,8 @@
     "id": "tucson",
     "name": "Tucson",
     "url": "https://aasoaaz.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-AZ"
+    "regionHint": "US-AZ",
+    "status": "disabled"
   },
   {
     "id": "vegas",
@@ -183,7 +200,8 @@
     "id": "sacramento",
     "name": "Sacramento",
     "url": "https://aasacramento.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "honolulu",
@@ -201,7 +219,8 @@
     "id": "vancouver",
     "name": "Vancouver",
     "url": "https://vancouveraa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "CA-BC"
+    "regionHint": "CA-BC",
+    "status": "disabled"
   },
   {
     "id": "calgary",
@@ -212,7 +231,7 @@
   {
     "id": "london-uk",
     "name": "London AA",
-    "url": "https://aa-london.com/api/meetingguide",
+    "url": "https://aa-london.com/api/meetingguide.json",
     "regionHint": "GB-LON",
     "fellowship": "aa",
     "format": "tsml"
@@ -221,25 +240,29 @@
     "id": "manchester-uk",
     "name": "Manchester UK",
     "url": "https://aamanch.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB-MAN"
+    "regionHint": "GB-MAN",
+    "status": "disabled"
   },
   {
     "id": "glasgow-uk",
     "name": "Glasgow",
     "url": "https://aaglasgow.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB-SCT"
+    "regionHint": "GB-SCT",
+    "status": "disabled"
   },
   {
     "id": "dublin",
     "name": "Ireland",
     "url": "https://www.alcoholicsanonymous.ie/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "IE"
+    "regionHint": "IE",
+    "status": "disabled"
   },
   {
     "id": "sydney",
     "name": "Sydney",
     "url": "https://aasydney.org.au/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "AU-NSW"
+    "regionHint": "AU-NSW",
+    "status": "disabled"
   },
   {
     "id": "melbourne",
@@ -263,19 +286,22 @@
     "id": "cer-europe",
     "name": "Continental European Region",
     "url": "https://alcoholics-anonymous.eu/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "EU"
+    "regionHint": "EU",
+    "status": "disabled"
   },
   {
     "id": "aa-southmidlands",
     "name": "South Midlands UK",
     "url": "https://aasouthmidlands.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB"
+    "regionHint": "GB",
+    "status": "disabled"
   },
   {
     "id": "westkent-uk",
     "name": "West Kent UK",
     "url": "https://westkentaa.org.uk/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "GB"
+    "regionHint": "GB",
+    "status": "disabled"
   },
   {
     "id": "bournemouth-aa",
@@ -283,7 +309,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/bournemouth-district-intergroup/in-person-meetings/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "aa-south-west",
@@ -291,7 +318,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/regions/south-west-region/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb-region"
+    "format": "aagb-region",
+    "status": "disabled"
   },
   {
     "id": "east-kent-aa",
@@ -299,7 +327,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/east-kent-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "cornwall-aa",
@@ -307,7 +336,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/cornwall-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "devon-central-aa",
@@ -315,7 +345,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/devon-central-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "south-devon-aa",
@@ -323,7 +354,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/south-devon-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "somerset-aa",
@@ -331,7 +363,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/somerset-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "west-dorset-aa",
@@ -339,7 +372,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/west-dorset-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "jersey-aa",
@@ -347,7 +381,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/jersey-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "guernsey-aa",
@@ -355,7 +390,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/guernsey-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "plymouth-aa",
@@ -363,7 +399,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/plymouth-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "poole-aa",
@@ -371,7 +408,8 @@
     "url": "https://www.alcoholics-anonymous.org.uk/intergroups/poole-district-intergroup/",
     "regionHint": "GB",
     "fellowship": "aa",
-    "format": "aagb"
+    "format": "aagb",
+    "status": "disabled"
   },
   {
     "id": "cauk-south",
@@ -413,13 +451,15 @@
     "id": "contracosta",
     "name": "Contra Costa",
     "url": "https://contracostaaa.org/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "ncintergroup",
     "name": "Northern California Intergroup",
     "url": "https://ncintergroup.com/wp-admin/admin-ajax.php?action=meetings",
-    "regionHint": "US-CA"
+    "regionHint": "US-CA",
+    "status": "disabled"
   },
   {
     "id": "na-virtual",

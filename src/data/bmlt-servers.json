@@ -38,7 +38,7 @@
   {"id": "na-switzerland", "name": "NA Switzerland", "url": "https://bmlt.narcotics-anonymous.ch/main_server/", "regionHint": "CH"},
   {"id": "na-chicago", "name": "NA Chicagoland", "url": "https://bmlt.chicagona.org/main_server/", "regionHint": "US-IL"},
   {"id": "na-paraguay", "name": "NA Paraguay", "url": "https://www.na.org.py/bmlt/", "regionHint": "PY"},
-  {"id": "na-iran", "name": "NA Iran", "url": "https://bmlt.nairan3.org/main_server/", "regionHint": "IR"},
+  {"id": "na-iran", "name": "NA Iran", "url": "https://bmlt.nairan3.org/main_server/", "regionHint": "IR", "status": "disabled"},
   {"id": "na-greece", "name": "NA Greece", "url": "https://bmlt.na-greece.gr/main_server/", "regionHint": "GR"},
   {"id": "na-czechoslovakia", "name": "NA Czechoslovakia", "url": "https://bmlt.eu/eu/main_server/", "regionHint": "CZ"}
 ]

@@ -48,7 +48,43 @@ test("missing-country city keys use a coarse geographic scope", () => {
 test("rejects labels that are not real cities", () => {
   assert.equal(isUsableCityLabel("Regional"), false);
   assert.equal(isUsableCityLabel("Online"), false);
+  assert.equal(isUsableCityLabel("TBD"), false);
   assert.equal(isUsableCityLabel("London"), true);
+});
+
+test("expands OKC and drops TBD city labels", () => {
+  assert.deepEqual(
+    normalizePlaceFields({
+      city: "OKC",
+      neighborhood: null,
+      state: "OK",
+      postalCode: null,
+      country: "US",
+    }),
+    {
+      city: "Oklahoma City",
+      neighborhood: null,
+      state: "OK",
+      postalCode: null,
+      country: "US",
+    },
+  );
+  assert.deepEqual(
+    normalizePlaceFields({
+      city: "TBD",
+      neighborhood: null,
+      state: "OK",
+      postalCode: null,
+      country: "US",
+    }),
+    {
+      city: null,
+      neighborhood: null,
+      state: "OK",
+      postalCode: null,
+      country: "US",
+    },
+  );
 });
 
 test("collapses nearby jurisdiction variants of the same city", () => {

@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { and, eq, isNotNull, or, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { embedMany } from "ai";
 import { getDb } from "./db";
 import { meetingNoteEmbeddings, meetings } from "./schema";
 import { hasAiGatewayAuth } from "./ai-auth";
 
 export const DEFAULT_EMBED_LIMIT = 50;
-export const MAX_EMBED_LIMIT = 100;
+export const MAX_EMBED_LIMIT = 400;
 export const EMBEDDING_MODEL = "openai/text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 512;
 export const EMBED_BATCH_SIZE = 20;
@@ -86,6 +86,25 @@ export async function embedNotesBatch(options?: {
     MAX_EMBED_LIMIT,
   );
   const db = getDb();
+  const hasNotes = or(
+    and(isNotNull(meetings.notes), sql`btrim(${meetings.notes}) <> ''`),
+    and(
+      isNotNull(meetings.locationNotes),
+      sql`btrim(${meetings.locationNotes}) <> ''`,
+    ),
+  );
+  const stale = await db.execute(sql`
+    delete from meeting_note_embeddings e
+    where not exists (
+      select 1 from meetings m
+      where m.feed_id = e.feed_id
+        and m.slug = e.slug
+        and (
+          (m.notes is not null and btrim(m.notes) <> '')
+          or (m.location_notes is not null and btrim(m.location_notes) <> '')
+        )
+    )
+  `);
   const noted = await db
     .select({
       feedId: meetings.feedId,
@@ -95,37 +114,18 @@ export async function embedNotesBatch(options?: {
       geohash4: meetings.geohash4,
     })
     .from(meetings)
-    .where(
-      or(
-        and(isNotNull(meetings.notes), sql`btrim(${meetings.notes}) <> ''`),
-        and(
-          isNotNull(meetings.locationNotes),
-          sql`btrim(${meetings.locationNotes}) <> ''`,
-        ),
+    .leftJoin(
+      meetingNoteEmbeddings,
+      and(
+        eq(meetingNoteEmbeddings.feedId, meetings.feedId),
+        eq(meetingNoteEmbeddings.slug, meetings.slug),
       ),
-    );
+    )
+    .where(and(hasNotes, isNull(meetingNoteEmbeddings.feedId)))
+    .limit(limit);
 
-  const existing = await db
-    .select({
-      feedId: meetingNoteEmbeddings.feedId,
-      slug: meetingNoteEmbeddings.slug,
-      contentHash: meetingNoteEmbeddings.contentHash,
-    })
-    .from(meetingNoteEmbeddings);
-
-  const plan = planNoteEmbeddings(noted, existing);
-  for (const row of plan.toDelete) {
-    await db
-      .delete(meetingNoteEmbeddings)
-      .where(
-        and(
-          eq(meetingNoteEmbeddings.feedId, row.feedId),
-          eq(meetingNoteEmbeddings.slug, row.slug),
-        ),
-      );
-  }
-
-  const pending = plan.toEmbed.slice(0, limit);
+  const plan = planNoteEmbeddings(noted, []);
+  const pending = plan.toEmbed;
   let embedded = 0;
   for (let index = 0; index < pending.length; index += EMBED_BATCH_SIZE) {
     const chunk = pending.slice(index, index + EMBED_BATCH_SIZE);
@@ -166,7 +166,7 @@ export async function embedNotesBatch(options?: {
   return {
     considered: noted.length,
     embedded,
-    skipped: noted.length - pending.length,
-    deleted: plan.toDelete.length,
+    skipped: 0,
+    deleted: Number((stale as { rowCount?: number }).rowCount ?? 0),
   };
 }
