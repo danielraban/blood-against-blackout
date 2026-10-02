@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { and, count, eq, sql } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 import { getDb } from "@/lib/db";
 import { cities, feeds, meetings } from "@/lib/schema";
 import { freshFeedPredicate, isSourceFresh, safeMeetingPredicate } from "@/lib/verification";
 
-export async function GET() {
+async function getCoverage() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("cities");
   const db = getDb();
-  try {
-    const [feedRows, cityRows, geoRows, meetingTotal, feedTotals] = await Promise.all([
+  return Promise.all([
       db.select().from(feeds),
       db
         .select()
@@ -39,7 +42,13 @@ export async function GET() {
         })
         .from(feeds)
         .groupBy(feeds.status),
-    ]);
+  ]);
+}
+
+export async function GET() {
+  try {
+    const [feedRows, cityRows, geoRows, meetingTotal, feedTotals] =
+      await getCoverage();
     const freshFeeds = feedRows.filter((feed) =>
       isSourceFresh(feed.status, feed.lastOkAt),
     );

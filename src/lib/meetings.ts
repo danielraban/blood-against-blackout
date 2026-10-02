@@ -1,10 +1,18 @@
 import { and, eq } from "drizzle-orm";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { getDb } from "./db";
 import { entities, feeds, meetings } from "./schema";
 import { toMeeting } from "./slices";
 import { freshFeedPredicate, safeMeetingPredicate } from "./verification";
 
+export async function invalidateMeetingCaches() {
+  updateTag("meeting");
+}
+
 export async function getMeeting(feedId: string, slug: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("meeting", `meeting:${feedId}:${slug}`);
   const db = getDb();
   const [result] = await db
     .select({ meeting: meetings, feed: feeds })

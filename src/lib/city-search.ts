@@ -1,0 +1,44 @@
+import { ilike, or, sql } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
+import { getDb } from "./db";
+import { collapseCitySuggestions, escapeIlike } from "./location";
+import { cities } from "./schema";
+import type { City } from "./types";
+
+export async function getCities(q: string): Promise<City[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("cities");
+  const db = getDb();
+  const contains = q ? `%${escapeIlike(q)}%` : "";
+  const rows = q
+    ? await db
+        .select()
+        .from(cities)
+        .where(
+          or(
+            ilike(cities.label, contains),
+            ilike(cities.slug, contains),
+            ilike(cities.parentLabel, contains),
+            sql`${cities.aliases}::text ilike ${contains}`,
+          ),
+        )
+        .orderBy(
+          sql`
+            case
+              when lower(${cities.label}) = lower(${q}) then 0
+              when lower(${cities.label}) like lower(${q}) || '%' then 1
+              when lower(coalesce(${cities.parentLabel}, '')) = lower(${q}) then 2
+              else 3
+            end,
+            ${cities.meetingCount} desc
+          `,
+        )
+        .limit(20)
+    : await db
+        .select()
+        .from(cities)
+        .orderBy(sql`${cities.meetingCount} desc`)
+        .limit(40);
+  return collapseCitySuggestions(rows);
+}
