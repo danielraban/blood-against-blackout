@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   combineMeetingNotes,
   hashNoteContent,
+  noteEmbeddingUpsertRows,
   planNoteEmbeddings,
 } from "./embed-notes";
 
@@ -68,4 +69,34 @@ test("blank notes are not embedded", () => {
   );
   assert.deepEqual(plan.toEmbed, []);
   assert.deepEqual(plan.toDelete, [{ feedId: "feed", slug: "empty" }]);
+});
+
+test("embedding upserts skip missing vectors and keep chunk order", () => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  const rows = noteEmbeddingUpsertRows(
+    [
+      {
+        feedId: "feed",
+        slug: "one",
+        notes: "a",
+        locationNotes: null,
+        geohash4: "gcpv",
+        contentHash: "hash-one",
+      },
+      {
+        feedId: "feed",
+        slug: "two",
+        notes: "b",
+        locationNotes: null,
+        geohash4: null,
+        contentHash: "hash-two",
+      },
+    ],
+    [[0.1, 0.2]],
+    now,
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.slug, "one");
+  assert.deepEqual(rows[0]?.embedding, [0.1, 0.2]);
+  assert.equal(rows[0]?.updatedAt, now);
 });

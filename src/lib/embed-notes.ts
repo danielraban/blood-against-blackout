@@ -39,6 +39,27 @@ export function hashNoteContent(content: string) {
   return createHash("sha256").update(content).digest("hex");
 }
 
+export function noteEmbeddingUpsertRows(
+  chunk: Array<NoteMeeting & { contentHash: string }>,
+  embeddings: number[][],
+  now: Date,
+) {
+  return chunk.flatMap((row, offset) => {
+    const embedding = embeddings[offset];
+    if (!embedding) return [];
+    return [
+      {
+        feedId: row.feedId,
+        slug: row.slug,
+        contentHash: row.contentHash,
+        geohash4: row.geohash4,
+        embedding,
+        updatedAt: now,
+      },
+    ];
+  });
+}
+
 export function planNoteEmbeddings(
   rows: NoteMeeting[],
   existing: ExistingNoteEmbedding[],
@@ -137,30 +158,21 @@ export async function embedNotesBatch(options?: {
       },
     });
     const now = new Date();
-    for (const [offset, row] of chunk.entries()) {
-      const embedding = embeddings[offset];
-      if (!embedding) continue;
-      await db
-        .insert(meetingNoteEmbeddings)
-        .values({
-          feedId: row.feedId,
-          slug: row.slug,
-          contentHash: row.contentHash,
-          geohash4: row.geohash4,
-          embedding,
-          updatedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: [meetingNoteEmbeddings.feedId, meetingNoteEmbeddings.slug],
-          set: {
-            contentHash: row.contentHash,
-            geohash4: row.geohash4,
-            embedding,
-            updatedAt: now,
-          },
-        });
-      embedded += 1;
-    }
+    const rows = noteEmbeddingUpsertRows(chunk, embeddings, now);
+    if (rows.length === 0) continue;
+    await db
+      .insert(meetingNoteEmbeddings)
+      .values(rows)
+      .onConflictDoUpdate({
+        target: [meetingNoteEmbeddings.feedId, meetingNoteEmbeddings.slug],
+        set: {
+          contentHash: sql`excluded.content_hash`,
+          geohash4: sql`excluded.geohash4`,
+          embedding: sql`excluded.embedding`,
+          updatedAt: sql`excluded.updated_at`,
+        },
+      });
+    embedded += rows.length;
   }
 
   return {
