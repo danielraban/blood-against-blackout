@@ -15,6 +15,15 @@ export function capSliceMeetings<T>(meetings: T[], cap = SLICE_MEETING_CAP) {
   return { meetings: meetings.slice(0, cap), truncated: true };
 }
 
+export function omitSliceListFields(meeting: Meeting): Meeting {
+  return {
+    ...meeting,
+    notes: null,
+    locationNotes: null,
+    feedbackEmails: [],
+  };
+}
+
 function toMeeting(
   row: typeof meetings.$inferSelect,
   entity: typeof entities.$inferSelect | undefined,
@@ -130,7 +139,7 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
     geohash,
     neighbors,
     fetchedAt: new Date().toISOString(),
-    meetings: capped.meetings,
+    meetings: capped.meetings.map(omitSliceListFields),
     sourceFeeds: feedRows.map((f) => ({ id: f.id, name: f.name })),
     truncated: capped.truncated,
   };
