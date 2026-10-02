@@ -189,21 +189,29 @@ export async function rebuildCities() {
   ]);
 }
 
+export async function meetingGeohashesForFeeds(
+  feedIds: string[],
+): Promise<string[]> {
+  if (feedIds.length === 0) return [];
+  const db = getDb();
+  const touchedRows = await db
+    .selectDistinct({ geohash4: meetings.geohash4 })
+    .from(meetings)
+    .where(and(inArray(meetings.feedId, feedIds), isNotNull(meetings.geohash4)));
+  return touchedRows
+    .map((row) => row.geohash4)
+    .filter((hash): hash is string => hash != null);
+}
+
 export async function rebuildCitiesForFeeds(feedIds: string[]) {
   if (feedIds.length === 0) {
     await rebuildCities();
     return;
   }
 
-  const db = getDb();
-  const touchedRows = await db
-    .selectDistinct({ geohash4: meetings.geohash4 })
-    .from(meetings)
-    .where(and(inArray(meetings.feedId, feedIds), isNotNull(meetings.geohash4)));
-  const hashes = touchedRows
-    .map((row) => row.geohash4)
-    .filter((hash): hash is string => hash != null);
+  const hashes = await meetingGeohashesForFeeds(feedIds);
   if (hashes.length === 0) return;
+  const db = getDb();
 
   await db.batch([
     db.delete(cities).where(inArray(cities.geohash4, hashes)),

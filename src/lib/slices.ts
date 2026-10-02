@@ -1,4 +1,5 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { getDb } from "./db";
 import { cities, entities, feeds, meetings } from "./schema";
 import { neighborGeohashes } from "./geo";
@@ -9,6 +10,22 @@ import { meetingBelongsToSlice, sliceAreaFromCities } from "./slice-area";
 import { freshFeedPredicate, safeMeetingPredicate } from "./verification";
 
 export const SLICE_MEETING_CAP = 1500;
+
+export function sliceCacheTag(geohash: string) {
+  return `slice:${geohash}`;
+}
+
+export function sliceCacheTagsForArea(geohash: string) {
+  return neighborGeohashes(geohash).map(sliceCacheTag);
+}
+
+export async function invalidateSliceCaches(geohashes: string[]) {
+  const tags = new Set<string>();
+  for (const hash of geohashes) {
+    for (const tag of sliceCacheTagsForArea(hash)) tags.add(tag);
+  }
+  for (const tag of tags) updateTag(tag);
+}
 
 export function capSliceMeetings<T>(meetings: T[], cap = SLICE_MEETING_CAP) {
   if (meetings.length <= cap) return { meetings, truncated: false };
@@ -68,6 +85,9 @@ function toMeeting(
 }
 
 export async function getSlice(geohash: string): Promise<SlicePayload> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(sliceCacheTag(geohash));
   const db = getDb();
   const neighbors = neighborGeohashes(geohash);
   const localCities = await db

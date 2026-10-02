@@ -1,4 +1,5 @@
 import { and, eq, inArray, lt, sql } from "drizzle-orm";
+import { updateTag } from "next/cache";
 import { getDb } from "../db";
 import { feeds, ingestCatalog, ingestRuns } from "../schema";
 import { slugify } from "../utils";
@@ -7,9 +8,11 @@ import { canonicalFeedUrl } from "../feed-url";
 import { SOURCE_FRESHNESS_HOURS } from "../verification";
 import {
   cityRebuildPlan,
+  meetingGeohashesForFeeds,
   rebuildCities,
   rebuildCitiesForFeeds,
 } from "../ingest-cities";
+import { invalidateSliceCaches } from "../slices";
 import { CITIES_CLEAN, CITIES_DIRTY, INGEST_CITIES_ID } from "../ingest-catalog";
 import { feedClaimSql } from "../ingest-claim";
 import {
@@ -239,6 +242,10 @@ async function runIngest(options: {
       await markCitiesClean();
     } else if (plan.mode === "incremental") {
       await rebuildCitiesForFeeds(plan.feedIds);
+    }
+    if (writtenFeedIds.size > 0) {
+      const hashes = await meetingGeohashesForFeeds([...writtenFeedIds]);
+      await invalidateSliceCaches(hashes);
     }
   } catch (error) {
     failure = error;

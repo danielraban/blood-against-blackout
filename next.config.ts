@@ -22,6 +22,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   outputFileTracingRoot: projectRoot,
   turbopack: {
     root: projectRoot,

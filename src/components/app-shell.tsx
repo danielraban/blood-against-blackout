@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { BottomNav } from "./bottom-nav";
 import { InstallHint } from "./install-hint";
@@ -23,7 +24,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           seek the meeting. starve the machine.
         </p>
       </header>
-      <main className="flex-1 pb-28 pt-4">{children}</main>
+      <main className="flex-1 pb-28 pt-4">
+        <Suspense fallback={<p>Loading…</p>}>{children}</Suspense>
+      </main>
       <footer className="border-t-4 border-black pt-6 pb-[calc(5.75rem+env(safe-area-inset-bottom))] text-sm text-muted">
         <p>
           blood against blackout is an independent project. It is not affiliated with, nor
@@ -60,7 +63,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </footer>
       <InstallHint />
       <ServiceWorkerRegistration />
-      <BottomNav />
+      <Suspense fallback={null}>
+        <BottomNav />
+      </Suspense>
     </div>
   );
 }
