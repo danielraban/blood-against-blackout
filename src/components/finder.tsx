@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSliceLoader } from "@/components/use-slice-loader";
 import { MeetingCard } from "@/components/meeting-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,8 @@ import {
   type SearchFilters,
   type SlicePayload,
 } from "@/lib/types";
-import { readSlice, writeSlice, savePlace } from "@/lib/idb";
+import { loadSlicePayload, sliceLoadStatus } from "@/lib/slice-loader";
+import { savePlace } from "@/lib/idb";
 import {
   filterAndGroup,
   type RankedMeeting,
@@ -59,9 +60,7 @@ export function Finder({
   initialMeetings?: Meeting[];
   mode?: "nearby" | "online";
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
+  const { urlGh, urlCity, params, replaceSliceUrl } = useSliceLoader();
   const [filters, setFilters] = useState<SearchFilters>({
     ...DEFAULT_FILTERS,
     attendance: mode === "online" ? "online" : "either",
@@ -102,53 +101,36 @@ export function Finder({
   ) => {
     setGeohash(hash);
     setStatus("Loading meetings…");
-    const cached = await readSlice(hash);
-    if (cached?.slice) {
-      setSlice(cached.slice);
-      if (cached.stale) {
+    try {
+      const result = await loadSlicePayload(hash, (cached, stale) => {
+        setSlice(cached);
         setOfflineNote(
-          `Cached list from ${new Date(cached.slice.fetchedAt).toLocaleString()}`,
+          stale
+            ? `Cached list from ${new Date(cached.fetchedAt).toLocaleString()}`
+            : null,
+        );
+      });
+      setSlice(result.slice);
+      if (result.offline) {
+        setOfflineNote(
+          `Showing saved list from ${new Date(result.slice.fetchedAt).toLocaleString()} (offline)`,
         );
       } else {
         setOfflineNote(null);
       }
-    }
-    try {
-      const response = await fetch(`/api/slices/${hash}`);
-      if (!response.ok) throw new Error("Could not load this area");
-      const data = (await response.json()) as SlicePayload;
-      setSlice(data);
-      await writeSlice(data);
-      setOfflineNote(null);
-      setStatus(
-        data.meetings.length
-          ? data.truncated
-            ? `${data.meetings.length} listings in this area (capped — search a city or tighten filters)`
-            : `${data.meetings.length} listings in this area`
-          : "No public feed covers this area yet",
-      );
+      setStatus(sliceLoadStatus(result.slice));
     } catch {
-      if (!cached?.slice) {
-        setStatus("No public feed covers this area yet — try Online.");
-      } else {
-        setOfflineNote(
-          `Showing saved list from ${new Date(cached.slice.fetchedAt).toLocaleString()} (offline)`,
-        );
-      }
+      setStatus("No public feed covers this area yet — try Online.");
     }
     if (nextOrigin) setOrigin(nextOrigin);
-    const next = new URLSearchParams(params.toString());
-    next.set("gh", hash);
-    if (citySlug === null) next.delete("city");
-    else if (citySlug) next.set("city", citySlug);
-    next.delete("lat");
-    next.delete("lng");
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  }, [params, pathname, router]);
+    replaceSliceUrl(hash, citySlug);
+  }, [replaceSliceUrl]);
 
   useEffect(() => {
-    const gh = params.get("gh");
-    const city = params.get("city");
+    const gh = urlGh;
+    const city = urlCity;
+    if (city && selectedCity?.slug === city && geohash) return;
+    if (!city && gh === geohash) return;
     const handle = window.setTimeout(() => {
       if (city) {
         void (async () => {
@@ -170,8 +152,7 @@ export function Finder({
       }
     }, 0);
     return () => window.clearTimeout(handle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [geohash, loadSlice, params, selectedCity, urlCity, urlGh]);
 
   useEffect(() => {
     const q = cityQuery.trim();

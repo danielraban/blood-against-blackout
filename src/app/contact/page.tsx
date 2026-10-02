@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSliceLoader } from "@/components/use-slice-loader";
 import { encodeGeohash4 } from "@/lib/geo";
+import { loadSlicePayload } from "@/lib/slice-loader";
 
 type Entity = {
   name: string;
@@ -12,40 +14,39 @@ type Entity = {
 };
 
 export default function ContactPage() {
+  const { urlGh } = useSliceLoader();
   const [entities, setEntities] = useState<Entity[]>([]);
   const [status, setStatus] = useState("Choose a city on Nearby, or use location to load local offices.");
 
   const load = useCallback(async (hash: string) => {
     setStatus("Loading local offices…");
-    const response = await fetch(`/api/slices/${hash}`);
-    if (!response.ok) {
+    try {
+      const { slice } = await loadSlicePayload(hash);
+      const unique = new Map<string, Entity>();
+      for (const meeting of slice.meetings) {
+        if (!meeting.entityName) continue;
+        unique.set(meeting.entityName, {
+          name: meeting.entityName,
+          phone: meeting.entityPhone,
+          email: meeting.entityEmail,
+          url: meeting.entityUrl,
+          locationText: null,
+        });
+      }
+      setEntities([...unique.values()]);
+      setStatus(
+        unique.size
+          ? "These contacts come from the public feeds covering this area."
+          : "No local office contact was attached to listings here.",
+      );
+    } catch {
       setStatus("Could not load this area.");
-      return;
     }
-    const data = await response.json();
-    const unique = new Map<string, Entity>();
-    for (const meeting of data.meetings ?? []) {
-      if (!meeting.entityName) continue;
-      unique.set(meeting.entityName, {
-        name: meeting.entityName,
-        phone: meeting.entityPhone,
-        email: meeting.entityEmail,
-        url: meeting.entityUrl,
-        locationText: null,
-      });
-    }
-    setEntities([...unique.values()]);
-    setStatus(
-      unique.size
-        ? "These contacts come from the public feeds covering this area."
-        : "No local office contact was attached to listings here.",
-    );
   }, []);
 
   useEffect(() => {
-    const gh = new URLSearchParams(window.location.search).get("gh");
-    if (gh) {
-      const handle = window.setTimeout(() => void load(gh), 0);
+    if (urlGh) {
+      const handle = window.setTimeout(() => void load(urlGh), 0);
       return () => window.clearTimeout(handle);
     }
     if (!navigator.geolocation) return;
@@ -55,7 +56,7 @@ export default function ContactPage() {
       },
       () => setStatus("Location denied. Open Nearby, pick a city, then come back from Coverage."),
     );
-  }, [load]);
+  }, [load, urlGh]);
 
   return (
     <div className="space-y-4">
