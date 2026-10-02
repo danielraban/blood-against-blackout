@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MeetingCard } from "@/components/meeting-card";
-import { MeetingMap } from "@/components/meeting-map";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { encodeGeohash4 } from "@/lib/geo";
@@ -24,13 +24,21 @@ import {
 } from "@/lib/search";
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
-import { AskPanel } from "@/components/ask-panel";
 import { ComicStrip } from "@/components/comic-strip";
 import { OfficialLocators } from "@/components/official-locators";
 import { meetingKey, meetingRefsForChat } from "@/lib/chat-meetings";
 import { mergeAskFilters } from "@/lib/chat-ui";
 import { cn } from "@/lib/utils";
 import { Map, SlidersHorizontal, X } from "lucide-react";
+
+const MeetingMap = dynamic(
+  () => import("@/components/meeting-map").then((mod) => mod.MeetingMap),
+  { ssr: false },
+);
+const AskPanel = dynamic(
+  () => import("@/components/ask-panel").then((mod) => mod.AskPanel),
+  { ssr: false },
+);
 
 const DAYS: Array<{ value: SearchFilters["day"]; label: string }> = [
   { value: "today", label: "today" },

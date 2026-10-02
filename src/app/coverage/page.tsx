@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MeetingMap } from "@/components/meeting-map";
 import { OfficialLocators } from "@/components/official-locators";
 import type { RankedMeeting } from "@/lib/search";
+
+const MeetingMap = dynamic(
+  () => import("@/components/meeting-map").then((mod) => mod.MeetingMap),
+  { ssr: false },
+);
 
 type Coverage = {
   totals?: {
