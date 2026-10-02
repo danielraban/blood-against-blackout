@@ -1,4 +1,4 @@
-import { and, eq, or, type Column } from "drizzle-orm";
+import { and, eq, sql, type Column, type SQL } from "drizzle-orm";
 import { embed } from "ai";
 import { getDb } from "./db";
 import { meetingNoteEmbeddings, meetings } from "./schema";
@@ -8,16 +8,16 @@ import type { ChatMeetingRef } from "./chat-request";
 import { rankNoteHits, type NoteEmbeddingRow } from "./chat-notes";
 import { EMBEDDING_DIMENSIONS, EMBEDDING_MODEL } from "./embed-notes";
 
-function allowedPredicate(
+export function allowedPairPredicate(
   feedCol: Column,
   slugCol: Column,
   allowed: ChatMeetingRef[],
-) {
-  return or(
-    ...allowed.map((item) =>
-      and(eq(feedCol, item.feedId), eq(slugCol, item.slug)),
-    ),
-  );
+): SQL {
+  if (allowed.length === 0) return sql`false`;
+  return sql`(${feedCol}, ${slugCol}) in (values ${sql.join(
+    allowed.map((item) => sql`(${item.feedId}, ${item.slug})`),
+    sql`, `,
+  )})`;
 }
 
 function toMeeting(row: typeof meetings.$inferSelect): Meeting {
@@ -65,7 +65,7 @@ export async function loadAllowedMeetings(allowed: ChatMeetingRef[]) {
   const rows = await db
     .select()
     .from(meetings)
-    .where(allowedPredicate(meetings.feedId, meetings.slug, allowed));
+    .where(allowedPairPredicate(meetings.feedId, meetings.slug, allowed));
   return rows.map(toMeeting);
 }
 
@@ -90,7 +90,7 @@ export async function loadAllowedNoteRows(allowed: ChatMeetingRef[]) {
       ),
     )
     .where(
-      allowedPredicate(
+      allowedPairPredicate(
         meetingNoteEmbeddings.feedId,
         meetingNoteEmbeddings.slug,
         allowed,
