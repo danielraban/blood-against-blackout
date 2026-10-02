@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { runWithConcurrency, sortFeedsStaleFirst } from "./ingest-queue";
+import {
+  clonePlaceBudget,
+  mergeIngestStats,
+  runWithConcurrency,
+  sortFeedsStaleFirst,
+} from "./ingest-queue";
 
 test("stale-first ingest prefers never-attempted feeds, then oldest lastAttemptAt", () => {
   const ordered = sortFeedsStaleFirst([
@@ -69,4 +74,46 @@ test("concurrency pool leaves untaken work when the budget closes", async () => 
   assert.ok(maxActive <= 2);
   assert.deepEqual(started, [1, 2, 3]);
   assert.deepEqual(leftover, [4, 5, 6]);
+});
+
+test("place budgets are cloned so parallel workers cannot share remaining counts", () => {
+  const shared = { reverse: 12, ai: 25 };
+  const left = clonePlaceBudget(shared);
+  const right = clonePlaceBudget(shared);
+  left.ai -= 3;
+  right.reverse -= 1;
+  assert.deepEqual(shared, { reverse: 12, ai: 25 });
+  assert.deepEqual(left, { reverse: 12, ai: 22 });
+  assert.deepEqual(right, { reverse: 11, ai: 25 });
+});
+
+test("ingest stats merge numeric counters and errors", () => {
+  const into = {
+    feedsClaimed: 2,
+    feedsProcessed: 2,
+    feedsOk: 1,
+    feedsFail: 1,
+    feedsNotModified: 0,
+    feedsWritten: 1,
+    meetingsUpserted: 10,
+    budgetExhausted: 0,
+    feedsBehindFreshness: 3,
+    errors: ["a"],
+  };
+  mergeIngestStats(into, {
+    feedsClaimed: 0,
+    feedsProcessed: 1,
+    feedsOk: 1,
+    feedsFail: 0,
+    feedsNotModified: 1,
+    feedsWritten: 0,
+    meetingsUpserted: 4,
+    budgetExhausted: 2,
+    feedsBehindFreshness: 0,
+    errors: ["b"],
+  });
+  assert.equal(into.feedsOk, 2);
+  assert.equal(into.meetingsUpserted, 14);
+  assert.equal(into.budgetExhausted, 2);
+  assert.deepEqual(into.errors, ["a", "b"]);
 });

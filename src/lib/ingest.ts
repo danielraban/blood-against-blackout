@@ -59,7 +59,7 @@ import {
   resultRows,
   type ClaimedFeed,
 } from "./ingest-lease";
-import { runWithConcurrency } from "./ingest-queue";
+import { clonePlaceBudget, mergeIngestStats, runWithConcurrency } from "./ingest-queue";
 import { scheduleNominatim } from "./nominatim-limit";
 import {
   canUseAiCanonicalization,
@@ -1317,7 +1317,16 @@ async function runIngest(options: {
       const leftover = await runWithConcurrency(
         claimed,
         INGEST_CONCURRENCY,
-        (feed) => ingestFeed(feed, enrichmentBudget, stats, geocodes),
+        async (feed) => {
+          const localStats = emptyStats();
+          await ingestFeed(
+            feed,
+            clonePlaceBudget(enrichmentBudget),
+            localStats,
+            geocodes,
+          );
+          mergeIngestStats(stats, localStats);
+        },
         () => Date.now() < deadline,
       );
       if (leftover.length > 0) {

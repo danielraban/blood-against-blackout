@@ -35,3 +35,33 @@ export async function runWithConcurrency<T>(
   await Promise.all(workers);
   return pending;
 }
+
+export function clonePlaceBudget(budget: { reverse: number; ai: number }) {
+  return { reverse: budget.reverse, ai: budget.ai };
+}
+
+export type IngestStatTotals = {
+  feedsClaimed: number;
+  feedsProcessed: number;
+  feedsOk: number;
+  feedsFail: number;
+  feedsNotModified: number;
+  feedsWritten: number;
+  meetingsUpserted: number;
+  budgetExhausted: number;
+  feedsBehindFreshness: number;
+  errors: string[];
+};
+
+export function mergeIngestStats(into: IngestStatTotals, from: IngestStatTotals) {
+  into.feedsClaimed += from.feedsClaimed;
+  into.feedsProcessed += from.feedsProcessed;
+  into.feedsOk += from.feedsOk;
+  into.feedsFail += from.feedsFail;
+  into.feedsNotModified += from.feedsNotModified;
+  into.feedsWritten += from.feedsWritten;
+  into.meetingsUpserted += from.meetingsUpserted;
+  into.budgetExhausted += from.budgetExhausted;
+  into.feedsBehindFreshness += from.feedsBehindFreshness;
+  into.errors.push(...from.errors);
+}
