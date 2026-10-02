@@ -5,7 +5,7 @@ import { meetingNoteEmbeddings, meetings } from "./schema";
 import { asFellowship } from "./fellowship";
 import type { Meeting } from "./types";
 import type { ChatMeetingRef } from "./chat-request";
-import { rankNoteHits, type NoteEmbeddingRow } from "./chat-notes";
+import { noteHitsFromDistances, MAX_NOTE_HITS, NOTE_SIMILARITY_MIN, type NoteEmbeddingRow } from "./chat-notes";
 import { EMBEDDING_DIMENSIONS, EMBEDDING_MODEL } from "./embed-notes";
 
 export function allowedPairPredicate(
@@ -112,6 +112,38 @@ export async function searchAllowedNotes(
       openai: { dimensions: EMBEDDING_DIMENSIONS },
     },
   });
-  const rows = await loadAllowedNoteRows(allowed);
-  return rankNoteHits(embedding, rows, allowed, limit);
+  const cap = limit ?? MAX_NOTE_HITS;
+  const vector = `[${embedding.join(",")}]`;
+  const maxDistance = 1 - NOTE_SIMILARITY_MIN;
+  const db = getDb();
+  const rows = await db
+    .select({
+      feedId: meetingNoteEmbeddings.feedId,
+      slug: meetingNoteEmbeddings.slug,
+      name: meetings.name,
+      notes: meetings.notes,
+      locationNotes: meetings.locationNotes,
+      distance: sql<number>`${meetingNoteEmbeddings.embedding} <=> ${vector}::vector`,
+    })
+    .from(meetingNoteEmbeddings)
+    .innerJoin(
+      meetings,
+      and(
+        eq(meetings.feedId, meetingNoteEmbeddings.feedId),
+        eq(meetings.slug, meetingNoteEmbeddings.slug),
+      ),
+    )
+    .where(
+      and(
+        allowedPairPredicate(
+          meetingNoteEmbeddings.feedId,
+          meetingNoteEmbeddings.slug,
+          allowed,
+        ),
+        sql`(${meetingNoteEmbeddings.embedding} <=> ${vector}::vector) <= ${maxDistance}`,
+      ),
+    )
+    .orderBy(sql`${meetingNoteEmbeddings.embedding} <=> ${vector}::vector`)
+    .limit(cap);
+  return noteHitsFromDistances(rows, cap);
 }

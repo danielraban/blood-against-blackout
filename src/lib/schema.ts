@@ -166,6 +166,10 @@ export const meetingNoteEmbeddings = pgTable(
   (table) => [
     primaryKey({ columns: [table.feedId, table.slug] }),
     index("meeting_note_embeddings_geohash_idx").on(table.geohash4),
+    index("meeting_note_embeddings_hnsw_idx").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops"),
+    ),
     foreignKey({
       columns: [table.feedId, table.slug],
       foreignColumns: [meetings.feedId, meetings.slug],

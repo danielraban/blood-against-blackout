@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { rankNoteHits } from "./chat-notes";
+import { rankNoteHits, noteHitsFromDistances } from "./chat-notes";
 
 const query = [1, 0, 0, 0];
 
@@ -33,4 +33,31 @@ test("note search stays inside the allowed meeting ids", () => {
   assert.equal(hits[0]?.href, "/meetings/feed/allowed");
   assert.equal("lat" in (hits[0] ?? {}), false);
   assert.ok((hits[0]?.score ?? 0) > 0.3);
+});
+
+test("pgvector cosine distance maps to similarity scores", () => {
+  const hits = noteHitsFromDistances(
+    [
+      {
+        feedId: "feed",
+        slug: "close",
+        name: "Close",
+        notes: "Beginners",
+        locationNotes: null,
+        distance: 0.1,
+      },
+      {
+        feedId: "feed",
+        slug: "far",
+        name: "Far",
+        notes: "Unrelated",
+        locationNotes: null,
+        distance: 0.9,
+      },
+    ],
+    5,
+  );
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0]?.slug, "close");
+  assert.ok((hits[0]?.score ?? 0) >= 0.89);
 });

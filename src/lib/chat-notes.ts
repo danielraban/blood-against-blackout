@@ -47,3 +47,30 @@ export function rankNoteHits(
     .sort((left, right) => right.score - left.score)
     .slice(0, limit);
 }
+
+export type NoteDistanceRow = {
+  feedId: string;
+  slug: string;
+  name: string;
+  notes: string | null;
+  locationNotes: string | null;
+  distance: number;
+};
+
+export function noteHitsFromDistances(
+  rows: NoteDistanceRow[],
+  limit = MAX_NOTE_HITS,
+): NoteHit[] {
+  return rows
+    .map((row) => ({
+      feedId: row.feedId,
+      slug: row.slug,
+      name: row.name,
+      notes: row.notes,
+      locationNotes: row.locationNotes,
+      score: 1 - row.distance,
+      href: `/meetings/${row.feedId}/${row.slug}`,
+    }))
+    .filter((hit) => hit.score >= NOTE_SIMILARITY_MIN)
+    .slice(0, limit);
+}

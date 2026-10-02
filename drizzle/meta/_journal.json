@@ -43,6 +43,13 @@
       "when": 1789900000000,
       "tag": "0005_meeting_note_embeddings",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790000000000,
+      "tag": "0006_note_embedding_hnsw",
+      "breakpoints": true
     }
   ]
 }
