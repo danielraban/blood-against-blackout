@@ -1,10 +1,6 @@
-import { Suspense } from "react";
-import { Finder } from "@/components/finder";
+import { redirect } from "next/navigation";
 
 export default function MeetingsPage() {
-  return (
-    <Suspense fallback={<p>Loading…</p>}>
-      <Finder />
-    </Suspense>
-  );
+  redirect("/");
 }
+
