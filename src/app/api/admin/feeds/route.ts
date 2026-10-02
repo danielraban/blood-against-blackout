@@ -20,7 +20,6 @@ import { assertPublicHttpsUrl } from "@/lib/url-security";
 import { runMeetingAudit } from "@/lib/audit";
 
 export const maxDuration = 300;
-export const runtime = "nodejs";
 
 type AdminBody = {
   action: "login" | "logout" | "seed" | "ingest" | "add" | "status";

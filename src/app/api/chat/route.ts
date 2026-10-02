@@ -16,7 +16,6 @@ import {
 } from "@/lib/chat-request";
 import { createChatTools } from "@/lib/chat-tools";
 
-export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Public route. Add a Vercel Firewall rate limit on POST /api/chat so

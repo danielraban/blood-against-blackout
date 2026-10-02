@@ -3,7 +3,6 @@ import { checkCronSecret } from "@/lib/admin";
 import { ingestAllFeeds, DEFAULT_INGEST_LIMIT, MAX_INGEST_LIMIT, INGEST_TIME_BUDGET_MS } from "@/lib/ingest";
 
 export const maxDuration = 300;
-export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   if (!checkCronSecret(request)) {

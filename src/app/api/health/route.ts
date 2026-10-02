@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { missingProductionEnv } from "@/lib/env";
 
-export const runtime = "nodejs";
-
 export async function GET() {
   const missing = missingProductionEnv();
   if (missing.length) {

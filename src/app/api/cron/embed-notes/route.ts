@@ -7,7 +7,6 @@ import {
 } from "@/lib/embed-notes";
 
 export const maxDuration = 300;
-export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   if (!checkCronSecret(request)) {
