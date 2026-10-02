@@ -114,7 +114,9 @@ export function Finder({
       setOfflineNote(null);
       setStatus(
         data.meetings.length
-          ? `${data.meetings.length} listings in this area`
+          ? data.truncated
+            ? `${data.meetings.length} listings in this area (capped — search a city or tighten filters)`
+            : `${data.meetings.length} listings in this area`
           : "No public feed covers this area yet",
       );
     } catch {

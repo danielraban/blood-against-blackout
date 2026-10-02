@@ -8,6 +8,13 @@ import { collapseDuplicateMeetings } from "./search";
 import { meetingBelongsToSlice, sliceAreaFromCities } from "./slice-area";
 import { freshFeedPredicate, safeMeetingPredicate } from "./verification";
 
+export const SLICE_MEETING_CAP = 1500;
+
+export function capSliceMeetings<T>(meetings: T[], cap = SLICE_MEETING_CAP) {
+  if (meetings.length <= cap) return { meetings, truncated: false };
+  return { meetings: meetings.slice(0, cap), truncated: true };
+}
+
 function toMeeting(
   row: typeof meetings.$inferSelect,
   entity: typeof entities.$inferSelect | undefined,
@@ -105,12 +112,8 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
     : [];
   const entityMap = new Map(entityRows.map((e) => [e.id, e]));
   const feedRows = [...new Map(rows.map((r) => [r.feed.id, r.feed])).values()];
-
-  return {
-    geohash,
-    neighbors,
-    fetchedAt: new Date().toISOString(),
-    meetings: collapseDuplicateMeetings(
+  const capped = capSliceMeetings(
+    collapseDuplicateMeetings(
       rows
         .map(({ meeting, feed }) =>
           toMeeting(
@@ -121,7 +124,15 @@ export async function getSlice(geohash: string): Promise<SlicePayload> {
         )
         .filter((meeting) => meetingBelongsToSlice(meeting, area)),
     ),
+  );
+
+  return {
+    geohash,
+    neighbors,
+    fetchedAt: new Date().toISOString(),
+    meetings: capped.meetings,
     sourceFeeds: feedRows.map((f) => ({ id: f.id, name: f.name })),
+    truncated: capped.truncated,
   };
 }
 

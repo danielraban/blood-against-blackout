@@ -58,6 +58,7 @@ export type SlicePayload = {
   fetchedAt: string;
   meetings: Meeting[];
   sourceFeeds: { id: string; name: string }[];
+  truncated?: boolean;
 };
 
 export type AttendanceFilter = "in-person" | "online" | "either";
