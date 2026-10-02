@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { FellowshipBadge } from "@/components/fellowship-badge";
 import type { RankedMeeting } from "@/lib/search";
 import { formatDistance, formatTime, formatUntil, isStale, weekdayLabel } from "@/lib/search";
 import { labelForType } from "@/lib/spec";
-import { FELLOWSHIP_LABEL } from "@/lib/fellowship";
-import { cn } from "@/lib/utils";
 
 export function MeetingCard({
   meeting,
@@ -45,18 +44,7 @@ export function MeetingCard({
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Badge
-          className={cn(
-            "border-black font-semibold lowercase",
-            meeting.fellowship === "na"
-              ? "bg-hot text-black"
-              : meeting.fellowship === "ca"
-                ? "bg-cool text-black"
-                : "bg-accent text-accent-fg",
-          )}
-        >
-          {FELLOWSHIP_LABEL[meeting.fellowship ?? "aa"]}
-        </Badge>
+        <FellowshipBadge fellowship={meeting.fellowship} />
         <Badge>{meeting.attendance}</Badge>
         {meeting.inProgress ? <Badge className="border-black bg-warn text-black">now</Badge> : null}
         {isStale(meeting.sourceVerifiedAt) ? <Badge>listing may be old</Badge> : null}

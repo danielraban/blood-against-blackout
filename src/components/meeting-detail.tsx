@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { FellowshipBadge } from "@/components/fellowship-badge";
 import { Button } from "@/components/ui/button";
 import {
   downloadIcs,
@@ -13,9 +14,8 @@ import {
 import { isFavorite, toggleFavorite } from "@/lib/idb";
 import { formatTime, isStale, weekdayLabel } from "@/lib/search";
 import { labelForType } from "@/lib/spec";
-import { FELLOWSHIP_LABEL, FELLOWSHIP_NAME } from "@/lib/fellowship";
+import { FELLOWSHIP_NAME } from "@/lib/fellowship";
 import type { Meeting } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 export function MeetingDetail({ meeting }: { meeting: Meeting }) {
   const [saved, setSaved] = useState(false);
@@ -40,18 +40,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
         {meeting.endTime ? `–${formatTime(meeting.endTime)}` : ""}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Badge
-          className={cn(
-            "border-black font-semibold lowercase",
-            meeting.fellowship === "na"
-              ? "bg-hot text-black"
-              : meeting.fellowship === "ca"
-                ? "bg-cool text-black"
-                : "bg-accent text-accent-fg",
-          )}
-        >
-          {FELLOWSHIP_LABEL[meeting.fellowship ?? "aa"]}
-        </Badge>
+        <FellowshipBadge fellowship={meeting.fellowship} />
         <Badge>source verified</Badge>
         <Badge>{meeting.attendance}</Badge>
         {isStale(meeting.sourceVerifiedAt) ? <Badge>listing may be old</Badge> : null}

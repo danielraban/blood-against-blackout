@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSliceLoader } from "@/components/use-slice-loader";
 import { MeetingCard } from "@/components/meeting-card";
+import { FellowshipBadge } from "@/components/fellowship-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { encodeGeohash4 } from "@/lib/geo";
@@ -24,7 +25,7 @@ import {
   weekGroupTitle,
 } from "@/lib/search";
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
-import { FELLOWSHIP_LABEL, type FellowshipFilter } from "@/lib/fellowship";
+import { type FellowshipFilter } from "@/lib/fellowship";
 import { ComicStrip } from "@/components/comic-strip";
 import { OfficialLocators } from "@/components/official-locators";
 import { meetingKey, meetingRefsForChat } from "@/lib/chat-meetings";
@@ -640,26 +641,12 @@ export function Finder({
         <FilterGroup label="fellowship">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(["all", "aa", "na", "ca"] as const).map((value) => (
-              <button
+              <FellowshipBadge
                 key={value}
-                type="button"
-                aria-pressed={filters.fellowship === value}
-                className={cn(
-                  "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold lowercase tracking-wide shadow-[3px_3px_0_0_#000]",
-                  filters.fellowship === value
-                    ? value === "na"
-                      ? "bg-hot text-black"
-                      : value === "ca"
-                        ? "bg-cool text-black"
-                        : value === "aa"
-                          ? "bg-accent text-accent-fg"
-                          : "bg-warn text-black"
-                    : "bg-card text-foreground",
-                )}
+                fellowship={value}
+                pressed={filters.fellowship === value}
                 onClick={() => setFilters((f) => ({ ...f, fellowship: value as FellowshipFilter }))}
-              >
-                {value === "all" ? "all" : FELLOWSHIP_LABEL[value]}
-              </button>
+              />
             ))}
           </div>
         </FilterGroup>
