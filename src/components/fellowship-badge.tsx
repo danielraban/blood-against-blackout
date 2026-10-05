@@ -24,7 +24,11 @@ export function FellowshipBadge({
 }) {
   const value: FellowshipFilter = fellowship ?? "aa";
   const label = value === "all" ? "all" : FELLOWSHIP_LABEL[value];
-  const tone = pressed === false ? "bg-card text-foreground" : fellowshipTone(value);
+  const tone = onClick
+    ? pressed
+      ? "bg-hot text-accent-fg"
+      : "bg-card text-foreground"
+    : fellowshipTone(value);
   if (onClick) {
     return (
       <button

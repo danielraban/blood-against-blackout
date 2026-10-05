@@ -413,11 +413,12 @@
   },
   {
     "id": "cauk-south",
-    "name": "C.A. South Central and Margate",
+    "name": "Cocaine Anonymous UK",
     "url": "https://meetings.cocaineanonymous.org.uk/locations/",
     "regionHint": "GB",
     "fellowship": "ca",
-    "format": "cauk"
+    "format": "cauk",
+    "refresh": true
   },
   {
     "id": "ukna-dorset",

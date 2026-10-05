@@ -1,6 +1,6 @@
 import { slugify } from "./utils";
 import type { RawMeeting } from "./parse-feed";
-import { ukCityAndPostcode } from "./uk-place";
+import { formatUkCity, ukCityAndPostcode } from "./uk-place";
 
 const WEEKDAYS = [
   "sunday",
@@ -10,23 +10,6 @@ const WEEKDAYS = [
   "thursday",
   "friday",
   "saturday",
-];
-
-const PLACES = [
-  "bournemouth",
-  "poole",
-  "boscombe",
-  "ferndown",
-  "christchurch",
-  "weymouth",
-  "dorchester",
-  "portland",
-  "salisbury",
-  "southampton",
-  "eastleigh",
-  "totton",
-  "yeovil",
-  "margate",
 ];
 
 const UK_CENTROID = { lat: 55.378, lng: -3.436 };
@@ -45,7 +28,7 @@ export function parseCaukLocationsHtml(html: string): RawMeeting[] {
 }
 
 function parseRow(cells: string[]): RawMeeting | null {
-  const [dayLabel, timeLabel, name, location, formatted, , , types, latText, lngText] = cells;
+  const [dayLabel, timeLabel, name, location, formatted, area, , types, latText, lngText] = cells;
   if (!name || !dayLabel || !timeLabel) return null;
   const day = WEEKDAYS.indexOf(dayLabel.toLowerCase());
   const time = clock(timeLabel);
@@ -54,11 +37,14 @@ function parseRow(cells: string[]): RawMeeting | null {
     .split(",")
     .map((type) => type.trim())
     .filter(Boolean);
-  if (isOnline(location ?? "", formatted ?? "", typeList)) return null;
-  const place = ukCityAndPostcode(formatted ?? "");
-  if (!isWantedPlace(formatted ?? "", place.city)) return null;
   const lat = Number(latText);
   const lng = Number(lngText);
+  if (isOnline(location ?? "", formatted ?? "", typeList, lat, lng)) return null;
+  const place = ukCityAndPostcode(formatted ?? "");
+  const areaCity =
+    area && !/^(online|virtual)$/i.test(area.trim()) ? formatUkCity(area) : "";
+  const city = place.city || areaCity || null;
+  if (!city && !formatted) return null;
   const pinned =
     Number.isFinite(lat) && Number.isFinite(lng) && !isUkCentroid(lat, lng)
       ? { latitude: lat, longitude: lng }
@@ -71,7 +57,7 @@ function parseRow(cells: string[]): RawMeeting | null {
     types: typeList.map(typeCode),
     location: location || null,
     address: formatted || null,
-    city: place.city,
+    city,
     postal_code: place.postalCode,
     country: "UK",
     timezone: "Europe/London",
@@ -82,17 +68,10 @@ function parseRow(cells: string[]): RawMeeting | null {
   };
 }
 
-function isWantedPlace(formatted: string, city: string | null) {
-  if (city && PLACES.includes(city.toLowerCase())) return true;
-  return formatted
-    .split(",")
-    .map((part) => part.replace(/\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i, "").trim().toLowerCase())
-    .some((part) => PLACES.includes(part));
-}
-
-function isOnline(location: string, formatted: string, types: string[]) {
-  if (types.some((type) => /online/i.test(type))) return true;
-  return /^(online|zoom)$/i.test(location.trim()) || /^online$/i.test(formatted.trim());
+function isOnline(location: string, formatted: string, types: string[], lat: number, lng: number) {
+  if (/^(online|zoom)$/i.test(location.trim()) || /^online$/i.test(formatted.trim())) return true;
+  const unlocated = !Number.isFinite(lat) || !Number.isFinite(lng) || isUkCentroid(lat, lng);
+  return types.some((type) => /online/i.test(type)) && unlocated;
 }
 
 function isUkCentroid(lat: number, lng: number) {
