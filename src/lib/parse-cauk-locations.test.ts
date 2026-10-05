@@ -54,16 +54,28 @@ const html = `
     <td>53.5148</td>
     <td>-2.2690</td>
   </tr>
+  <tr>
+    <td>Monday</td>
+    <td>19:00</td>
+    <td>The Priory H&amp;I meeting</td>
+    <td>The Priory Hospital</td>
+    <td>Priory Ln, London SW15 5JJ, UK</td>
+    <td>London</td>
+    <td></td>
+    <td>Open</td>
+    <td>51.462568</td>
+    <td>-0.2519637</td>
+  </tr>
 </table>
 `;
 
-test("the C.A. locations table keeps Margate and drops online and out-of-area rows", () => {
+test("the C.A. locations table keeps in-person UK rows and drops online meetings", () => {
   const meetings = parseCaukLocationsHtml(html).flatMap((item) =>
     parseFeedMeetings(item, "cauk-south", "ca", "cauk"),
   );
-  assert.equal(meetings.length, 1);
-  const margate = meetings[0];
-  assert.equal(margate?.name, "Margate Tuesday CA");
+  assert.equal(meetings.length, 4);
+  const byName = Object.fromEntries(meetings.map((meeting) => [meeting.name, meeting]));
+  const margate = byName["Margate Tuesday CA"];
   assert.equal(margate?.day, 2);
   assert.equal(margate?.time, "19:30");
   assert.equal(margate?.city, "Margate");
@@ -74,4 +86,10 @@ test("the C.A. locations table keeps Margate and drops online and out-of-area ro
   assert.equal(margate?.attendance, "in-person");
   assert.ok(margate?.types.includes("O"));
   assert.ok(margate?.types.includes("X"));
+  assert.equal(byName["On Awakening"]?.city, "Hove");
+  assert.equal(byName["Salford Monday"]?.city, "Salford");
+  const london = byName["The Priory H&I meeting"];
+  assert.equal(london?.city, "London");
+  assert.equal(london?.postalCode, "SW15 5JJ");
+  assert.equal(london?.fellowship, "ca");
 });

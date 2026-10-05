@@ -43,6 +43,7 @@ const seedFeeds = JSON.parse(feedsCatalogJson) as {
   fellowship?: string;
   format?: string;
   status?: "disabled";
+  refresh?: boolean;
 }[];
 
 const bmltServers = JSON.parse(bmltCatalogJson) as {
@@ -116,6 +117,9 @@ export async function seedFeedCatalog(options: { force?: boolean } = {}) {
           regionHint: feed.regionHint,
           fellowship: asFellowship(feed.fellowship),
           format: asFeedFormat(feed.format),
+          ...(feed.refresh
+            ? { etag: null, lastModified: null, lastAttemptAt: null }
+            : {}),
           ...(status === "disabled"
             ? { status, lastError: "No public JSON feed" }
             : {
