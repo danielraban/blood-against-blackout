@@ -27,7 +27,7 @@ export default function SavedPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">saved</h1>
+      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-wide sm:text-5xl">saved</h1>
       <section className="space-y-3">
         <h2 className="text-xl font-medium lowercase">places</h2>
         {places.length === 0 ? (

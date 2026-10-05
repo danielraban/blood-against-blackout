@@ -1,4 +1,4 @@
-const CACHE_NAME = "blood-against-blackout-shell-v1";
+const CACHE_NAME = "blood-against-blackout-shell-v2";
 const APP_SHELL = [
   "/",
   "/online",
@@ -6,10 +6,6 @@ const APP_SHELL = [
   "/resources",
   "/manifest.webmanifest",
   "/icon",
-  "/art/panel-map.jpg",
-  "/art/panel-walk.jpg",
-  "/art/panel-break.jpg",
-  "/art/panel-door.jpg",
 ];
 
 self.addEventListener("install", (event) => {
@@ -54,10 +50,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/art/")
-  ) {
+  if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;

@@ -26,7 +26,6 @@ import {
 } from "@/lib/search";
 import { FILTER_TYPE_CODES, labelForType } from "@/lib/spec";
 import { type FellowshipFilter } from "@/lib/fellowship";
-import { ComicStrip } from "@/components/comic-strip";
 import { OfficialLocators } from "@/components/official-locators";
 import { meetingKey, meetingRefsForChat } from "@/lib/chat-meetings";
 import { mergeAskFilters } from "@/lib/chat-ui";
@@ -121,7 +120,7 @@ export function Finder({
       }
       setStatus(sliceLoadStatus(result.slice));
     } catch {
-      setStatus("No public feed covers this area yet — try Online.");
+      setStatus("No listings cover this area yet — try Online.");
     }
     if (nextOrigin) setOrigin(nextOrigin);
     replaceSliceUrl(hash, citySlug);
@@ -392,10 +391,14 @@ export function Finder({
     <div className="space-y-5">
       {mode === "nearby" ? (
         <section className="space-y-3">
-          <h1 className="comic-wordmark font-display text-5xl lowercase tracking-tight sm:text-6xl">
-            darkness dies at the door
-          </h1>
-          <ComicStrip />
+          <div className="space-y-1">
+            <h1 className="font-display text-4xl lowercase tracking-wide sm:text-5xl">
+              find a meeting
+            </h1>
+            <p className="text-lg font-semibold text-muted">
+              darkness dies at the door
+            </p>
+          </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <div
               className="relative min-w-0 flex-1 space-y-2"
@@ -409,10 +412,10 @@ export function Finder({
               }}
             >
               <label
-                className="block text-sm font-semibold lowercase"
+                className="block text-sm font-semibold"
                 htmlFor="location-search"
               >
-                location
+                Location
               </label>
               <Input
                 id="location-search"
@@ -453,7 +456,7 @@ export function Finder({
               {cityOpen ? (
                 <div
                   id="city-suggestions"
-                  className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-40 max-h-72 overflow-y-auto border-4 border-black bg-card shadow-[6px_6px_0_0_#3d8bff]"
+                  className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-40 max-h-72 overflow-y-auto border-4 border-black bg-card shadow-[6px_6px_0_0_var(--hot)]"
                 >
                   {citySearchState === "loading" ? (
                     <p className="px-4 py-3 text-sm text-muted">Searching cities…</p>
@@ -473,7 +476,7 @@ export function Finder({
                             type="button"
                             role="option"
                             aria-selected="false"
-                            className="flex min-h-12 w-full items-center justify-between gap-4 px-4 text-left hover:bg-warn hover:text-black focus-visible:bg-warn focus-visible:text-black"
+                            className="flex min-h-12 w-full items-center justify-between gap-4 px-4 text-left hover:bg-hot hover:text-accent-fg focus-visible:bg-hot focus-visible:text-accent-fg"
                             onPointerDown={(event) => {
                               event.preventDefault();
                             }}
@@ -506,7 +509,7 @@ export function Finder({
               className="sm:self-end"
               onClick={useLocation}
             >
-              use my location
+              Use my location
             </Button>
           </div>
           <div className="space-y-2 border-2 border-black bg-background/95 p-3 backdrop-blur-sm">
@@ -520,13 +523,13 @@ export function Finder({
             {origin ? (
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
                   <button className="underline" onClick={() => void savePlace({ kind: "home", label: selectedCity?.label ?? "Home", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                    save as home
+                    Save as home
                   </button>
                   <button className="underline" onClick={() => void savePlace({ kind: "work", label: selectedCity?.label ?? "Work", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                    save as work
+                    Save as work
                   </button>
                   <button className="underline" onClick={() => void savePlace({ kind: "travel", label: selectedCity?.label ?? "Travel", geohash4: geohash ?? encodeGeohash4(origin.lat, origin.lng), lat: origin.lat, lng: origin.lng, citySlug: selectedCity?.slug })}>
-                    save as travel
+                    Save as travel
                   </button>
               </div>
             ) : null}
@@ -535,13 +538,10 @@ export function Finder({
         </section>
       ) : (
         <section>
-          <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">online meetings</h1>
+          <h1 className="font-display text-4xl lowercase tracking-wide sm:text-5xl">online meetings</h1>
           <p className="mt-2 text-muted">
             Times are shown in your timezone. Join links stay on this device.
           </p>
-          <div className="mt-4">
-            <ComicStrip compact />
-          </div>
         </section>
       )}
 
@@ -558,10 +558,10 @@ export function Finder({
       {canSearchMeetings ? (
         <div className="sticky top-0 z-20 space-y-2 border-y-2 border-black bg-background/95 py-3 backdrop-blur-sm">
           <label
-            className="block text-sm font-semibold lowercase"
+            className="block text-sm font-semibold"
             htmlFor="meeting-search"
           >
-            meeting search
+            Meeting search
           </label>
           <Input
             id="meeting-search"
@@ -576,7 +576,7 @@ export function Finder({
             {mode === "nearby" ? (
               <Button type="button" variant="outline" onClick={() => setShowMap((v) => !v)}>
                 <Map aria-hidden="true" size={18} />
-                {showMap ? "hide map" : "map"}
+                {showMap ? "Hide map" : "Map"}
               </Button>
             ) : null}
             <Button
@@ -587,7 +587,7 @@ export function Finder({
               onClick={() => setShowFilters(true)}
             >
               <SlidersHorizontal aria-hidden="true" size={18} />
-              filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
+              Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </Button>
           </div>
         </div>
@@ -612,15 +612,15 @@ export function Finder({
         aria-hidden={!showFilters}
         aria-labelledby="meeting-filters-title"
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-[min(92vw,32rem)] overflow-y-auto border-l-4 border-black bg-card shadow-[-8px_0_0_0_#ff2ad4] transition-[transform,visibility] duration-300 motion-reduce:transition-none",
+          "fixed inset-y-0 right-0 z-50 w-[min(92vw,32rem)] overflow-y-auto border-l-4 border-black bg-card shadow-[-8px_0_0_0_var(--hot)] transition-[transform,visibility] duration-300 motion-reduce:transition-none",
           showFilters ? "visible translate-x-0" : "invisible translate-x-full",
         )}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b-4 border-black bg-warn px-4 py-3 text-black">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b-4 border-black bg-hot px-4 py-3 text-accent-fg">
           <div>
             <h2
               id="meeting-filters-title"
-              className="font-display text-2xl lowercase tracking-tight"
+              className="font-display text-2xl lowercase tracking-wide"
             >
               filter meetings
             </h2>
@@ -674,7 +674,7 @@ export function Finder({
                 className={cn(
                   "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold lowercase shadow-[3px_3px_0_0_#000]",
                   filters.day === day.value
-                    ? "bg-warn text-black"
+                    ? "bg-hot text-accent-fg"
                     : "bg-card text-foreground",
                 )}
                 onClick={() =>
@@ -691,7 +691,7 @@ export function Finder({
             <button
               className={cn(
                 "min-h-12 shrink-0 border-2 border-black px-3 text-sm font-semibold lowercase shadow-[3px_3px_0_0_#000]",
-                filters.week ? "bg-hot text-black" : "bg-card text-foreground",
+                filters.week ? "bg-hot text-accent-fg" : "bg-card text-foreground",
               )}
               onClick={() => setFilters((f) => ({ ...f, week: !f.week, day: f.week ? "today" : "any" }))}
             >
@@ -777,7 +777,7 @@ export function Finder({
             reset filters
           </Button>
           <Button type="button" onClick={() => setShowFilters(false)}>
-            show {count} match{count === 1 ? "" : "es"}
+            Show {count} match{count === 1 ? "" : "es"}
           </Button>
         </div>
         </div>
@@ -803,7 +803,7 @@ export function Finder({
           <div className="flex flex-wrap gap-2">
             {hasExplicitFilters ? (
               <Button type="button" variant="outline" onClick={() => setFilters(defaultFilters)}>
-                clear filters
+                Clear filters
               </Button>
             ) : null}
             {!filters.week || filters.day !== "any" ? (
@@ -817,7 +817,7 @@ export function Finder({
                   }))
                 }
               >
-                show rest of week
+                Show rest of week
               </Button>
             ) : null}
             {mode === "nearby" && filters.radiusKm < 50 ? (
@@ -828,7 +828,7 @@ export function Finder({
                   setFilters((current) => ({ ...current, radiusKm: 50 }))
                 }
               >
-                expand to 50 km
+                Expand to 50 km
               </Button>
             ) : null}
           </div>
@@ -850,7 +850,7 @@ export function Finder({
 const chipClass =
   "min-h-12 border-2 border-black bg-card px-3 text-sm font-semibold lowercase text-foreground shadow-[3px_3px_0_0_#000]";
 const chipActiveClass =
-  "min-h-12 border-2 border-black bg-warn px-3 text-sm font-semibold lowercase text-black shadow-[3px_3px_0_0_#000]";
+  "min-h-12 border-2 border-black bg-hot px-3 text-sm font-semibold lowercase text-accent-fg shadow-[3px_3px_0_0_#000]";
 
 function Chip({
   active,
@@ -895,7 +895,7 @@ function Group({
   if (!items.length) return null;
   return (
     <section className="space-y-3">
-      <h2 className="font-display text-2xl lowercase tracking-tight text-warn">{title}</h2>
+      <h2 className="font-display text-2xl lowercase tracking-wide text-warn">{title}</h2>
       <ul className="space-y-3">
         {items.map((meeting) => (
           <li key={`${meeting.feedId}:${meeting.slug}`}>
@@ -940,19 +940,19 @@ function EmptyCoverage({ city }: { city?: string }) {
     <div className="comic-frame space-y-3 bg-card p-5">
         <p className="text-lg font-medium">
         {city
-          ? `No public feed covers ${city} yet.`
-          : "No public feed covers this area yet."}
+          ? `No listings for ${city} yet.`
+          : "No listings for this area yet."}
       </p>
-      <OfficialLocators intro="A missing city usually means the local office has not published Meeting Guide, TSML, or BMLT JSON — not that there are no meetings." />
+      <OfficialLocators intro="A missing city usually means the local office has not published an open meeting list — not that there are no meetings." />
       <p className="text-muted">
         Meanwhile, online meetings still work worldwide.
       </p>
       <div className="flex gap-2">
         <a href="/online">
-          <Button>see online meetings</Button>
+          <Button>See online meetings</Button>
         </a>
         <a href="/coverage">
-          <Button variant="outline">coverage map</Button>
+          <Button variant="outline">Coverage map</Button>
         </a>
       </div>
     </div>

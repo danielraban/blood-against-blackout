@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Archivo_Black } from "next/font/google";
+import { Geist, Geist_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { getSiteUrl } from "@/lib/site-url";
@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const archivoBlack = Archivo_Black({
+const bebasNeue = Bebas_Neue({
   weight: "400",
   variable: "--font-display",
   subsets: ["latin"],
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#140018",
+  themeColor: "#0b0610",
   width: "device-width",
   initialScale: 1,
 };
@@ -65,7 +65,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable} ${archivoBlack.variable}`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable}`}
     >
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <AppShell>{children}</AppShell>

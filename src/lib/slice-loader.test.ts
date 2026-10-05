@@ -17,7 +17,7 @@ function payload(meetings: SlicePayload["meetings"], truncated = false): SlicePa
 test("slice load status names an empty area", () => {
   assert.equal(
     sliceLoadStatus(payload([])),
-    "No public feed covers this area yet",
+    "No listings cover this area yet",
   );
 });
 

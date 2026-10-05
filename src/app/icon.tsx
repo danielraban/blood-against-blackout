@@ -13,13 +13,13 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#140018",
-          color: "#ffe600",
+          background: "#0b0610",
+          color: "#e11d2e",
           fontSize: 116,
           fontWeight: 900,
           letterSpacing: -4,
           border: "18px solid #000",
-          boxShadow: "0 0 0 14px #ff2ad4",
+          boxShadow: "0 0 0 14px #24102c",
         }}
       >
         bab

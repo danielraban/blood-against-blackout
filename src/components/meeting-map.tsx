@@ -45,7 +45,7 @@ export function MeetingMap({
       const el = document.createElement("a");
       el.href = `/meetings/${meeting.feedId}/${meeting.slug}`;
       el.className =
-        "block h-3 w-3 border-2 border-black bg-[#ffe600]";
+        "block h-3 w-3 border-2 border-black bg-[var(--hot)]";
       el.title = meeting.name;
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([meeting.lng!, meeting.lat!])
