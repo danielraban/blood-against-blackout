@@ -7,10 +7,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export function fellowshipTone(fellowship: FellowshipFilter) {
-  if (fellowship === "na") return "bg-hot text-black";
-  if (fellowship === "ca") return "bg-cool text-black";
-  if (fellowship === "all") return "bg-warn text-black";
-  return "bg-accent text-accent-fg";
+  if (fellowship === "na") return "bg-hot text-accent-fg";
+  if (fellowship === "ca") return "bg-black text-foreground";
+  if (fellowship === "all") return "bg-hot text-accent-fg";
+  return "bg-card text-foreground";
 }
 
 export function FellowshipBadge({

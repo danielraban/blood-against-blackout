@@ -33,7 +33,7 @@ export function MeetingDetail({ meeting }: { meeting: Meeting }) {
           nearby
         </Link>
       </p>
-      <h1 className="comic-wordmark font-display text-4xl tracking-tight">{meeting.name}</h1>
+      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-wide">{meeting.name}</h1>
       <p className="text-lg text-muted">
         {meeting.day != null ? `${weekdayLabel(meeting.day)} · ` : ""}
         {formatTime(meeting.time)}

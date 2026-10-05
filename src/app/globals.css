@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #140018;
-  --foreground: #fff6d8;
-  --card: #1d0833;
-  --muted: #ffb4e8;
-  --accent: #3d8bff;
-  --accent-fg: #fff8e8;
-  --hot: #ff2ad4;
-  --cool: #00ffe0;
-  --warn: #ffe600;
-  --border: #ff2ad4;
+  --background: #0b0610;
+  --foreground: #f7efe6;
+  --card: #24102c;
+  --muted: #c4adc8;
+  --accent: #e11d2e;
+  --accent-fg: #fff8f4;
+  --hot: #e11d2e;
+  --cool: #e8d6dc;
+  --warn: #f3b4b6;
+  --border: #6b2048;
   --danger: #ff4d6a;
 }
 
@@ -41,114 +41,59 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  opacity: 0.07;
+  background-image:
+    radial-gradient(rgba(247, 239, 230, 0.7) 0.55px, transparent 0.7px),
+    repeating-linear-gradient(
+      -18deg,
+      transparent 0 11px,
+      rgba(0, 0, 0, 0.18) 11px 12px
+    );
+  background-size: 3px 3px, auto;
+}
+
 * {
   border-color: var(--border);
 }
 
 :where(a, button, input, [tabindex]):focus-visible {
-  outline: 3px solid var(--cool);
+  outline: 3px solid var(--foreground);
   outline-offset: 3px;
 }
 
 .font-display {
   font-family: var(--font-display), Impact, "Arial Black", sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .comic-wordmark {
   display: inline-block;
-  color: var(--warn);
-  text-shadow:
-    3px 3px 0 #000,
-    -2px -2px 0 var(--hot),
-    4px 0 0 var(--accent);
-  animation: wordmark-pulse 3.8s steps(2, end) infinite;
+  color: var(--hot);
+  letter-spacing: 0.04em;
+  text-shadow: 3px 3px 0 #000;
 }
 
 .comic-frame {
   box-shadow:
-    0 0 0 3px #000,
-    0 0 0 6px var(--warn),
-    8px 8px 0 var(--hot);
-  animation: frame-arrive 500ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
-}
-
-.comic-wallpaper {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  overflow: hidden;
-}
-
-.comic-wallpaper-grid {
-  display: grid;
-  height: 100%;
-  width: 100%;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  filter: saturate(1.55) contrast(1.12);
-}
-
-.comic-wallpaper-grid > * {
-  background-size: cover;
-  background-position: center;
-}
-
-.comic-wallpaper::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(18, 0, 24, 0.7), rgba(18, 0, 24, 0.9)),
-    radial-gradient(var(--hot) 1.1px, transparent 1.4px);
-  background-size: auto, 5px 5px;
-  opacity: 1;
+    0 0 0 4px #000,
+    0 0 0 7px var(--hot),
+    10px 10px 0 #000;
 }
 
 .neon-bar {
   background: linear-gradient(
     90deg,
-    var(--hot) 0 18%,
-    var(--accent) 18% 42%,
-    var(--warn) 42% 62%,
-    var(--cool) 62% 82%,
-    var(--hot) 82% 100%
+    #000 0 22%,
+    var(--hot) 22% 52%,
+    var(--foreground) 52% 68%,
+    #000 68% 100%
   );
-  background-size: 200% 100%;
-  animation: neon-slide 4s linear infinite;
-}
-
-.comic-frame li {
-  opacity: 0;
-  transform: translateY(18px) rotate(-1.5deg) scale(0.96);
-  animation: panel-slam 560ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.comic-frame li:nth-child(2) {
-  animation-delay: 90ms;
-  transform: translateY(18px) rotate(1.5deg) scale(0.96);
-}
-
-.comic-frame li:nth-child(3) {
-  animation-delay: 180ms;
-}
-
-.comic-frame li:nth-child(4) {
-  animation-delay: 270ms;
-  transform: translateY(18px) rotate(1.5deg) scale(0.96);
-}
-
-.comic-frame li img {
-  transition: filter 220ms ease, transform 220ms ease;
-}
-
-.comic-frame li:hover img {
-  filter: saturate(1.25) contrast(1.08);
-  transform: scale(1.04);
-}
-
-.comic-frame li:hover {
-  z-index: 1;
 }
 
 a[href^="/meetings/"].block {
@@ -159,7 +104,7 @@ a[href^="/meetings/"].block {
 }
 
 a[href^="/meetings/"].block:hover {
-  transform: translate(-2px, -3px) rotate(-0.25deg);
+  transform: translate(-2px, -3px);
 }
 
 a[href^="/meetings/"].block:active {
@@ -180,44 +125,10 @@ button:active {
   box-shadow: 1px 1px 0 #000;
 }
 
-@keyframes panel-slam {
-  to {
-    opacity: 1;
-    transform: translateY(0) rotate(0) scale(1);
-  }
-}
-
 @keyframes card-rise {
   from {
     opacity: 0;
     transform: translateY(10px);
-  }
-}
-
-@keyframes frame-arrive {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-}
-
-@keyframes neon-slide {
-  to {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes wordmark-pulse {
-  0%,
-  94%,
-  100% {
-    transform: translate(0);
-  }
-  95% {
-    transform: translate(-1px, 1px);
-  }
-  97% {
-    transform: translate(1px, -1px);
   }
 }
 
@@ -231,13 +142,6 @@ button:active {
     scroll-behavior: auto !important;
   }
 
-  .comic-wallpaper {
-    filter: none;
-  }
-
-  .comic-frame li,
-  .comic-frame li:hover,
-  .comic-frame li:hover img,
   a[href^="/meetings/"].block,
   a[href^="/meetings/"].block:hover,
   a[href^="/meetings/"].block:active,

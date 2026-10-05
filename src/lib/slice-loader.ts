@@ -2,7 +2,7 @@ import { readSlice, writeSlice } from "./idb";
 import type { SlicePayload } from "./types";
 
 export function sliceLoadStatus(slice: SlicePayload) {
-  if (!slice.meetings.length) return "No public feed covers this area yet";
+  if (!slice.meetings.length) return "No listings cover this area yet";
   if (slice.truncated) {
     return `${slice.meetings.length} listings in this area (capped — search a city or tighten filters)`;
   }

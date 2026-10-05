@@ -95,13 +95,6 @@ async function mockAppApis(
 
 async function expectNoSeriousAccessibilityViolations(page: Page) {
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForFunction(() => {
-    const panels = [...document.querySelectorAll(".comic-frame li")];
-    return (
-      panels.length === 0 ||
-      panels.every((panel) => getComputedStyle(panel).opacity === "1")
-    );
-  });
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
@@ -185,13 +178,13 @@ test("nearby after use my location keeps local meetings and hides far online row
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "use my location" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
   await expect(page.getByText("Lombard Street @ 6am")).toBeVisible();
   await expect(page.getByText("Pimlico 12 Steps")).toBeVisible();
   await expect(page.getByText("Richmond Lunchie")).toHaveCount(0);
   await expect(page.getByText("Times as of")).toHaveCount(0);
   await expect(page.getByText(/\d{3,} km/)).toHaveCount(0);
-  await expect(page.getByText("save as home")).toBeVisible();
+  await expect(page.getByText("Save as home")).toBeVisible();
 });
 
 test("offers a city fallback when geolocation is denied", async ({ page }) => {
@@ -216,12 +209,12 @@ test("offers a city fallback when geolocation is denied", async ({ page }) => {
   await mockAppApis(page);
 
   await page.goto("/");
-  await page.getByRole("button", { name: "use my location" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
   await expect(page.getByText("Location was denied. Search a city instead.")).toBeVisible();
 
   await page.getByRole("combobox", { name: "Search city" }).fill("London");
   await page.getByRole("option", { name: /London/ }).click();
-  await expect(page.getByText("No public feed covers London yet.")).toBeVisible();
+  await expect(page.getByText("No listings for London yet.")).toBeVisible();
 });
 
 test("ask panel sends geohash and meeting ids after a location, never coordinates", async ({ page }) => {
@@ -251,7 +244,7 @@ test("ask panel sends geohash and meeting ids after a location, never coordinate
     slice: { ...emptySlice(), meetings: [meeting()] },
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "use my location" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
   await expect(page.getByText("QA Online Meeting")).toBeVisible();
   await expect(
     page.getByText("Ask about listings in this area, or how meetings work."),
@@ -263,7 +256,7 @@ test("ask panel sends geohash and meeting ids after a location, never coordinate
     new URL(request.url()).pathname === "/api/chat",
   );
   await page.getByLabel("Question").fill("beginners tonight");
-  await page.getByRole("button", { name: "ask", exact: true }).click();
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
   const request = await chatRequest;
   const body = request.postDataJSON() as {
     geohash?: string;
@@ -283,14 +276,14 @@ test("ask panel sends geohash and meeting ids after a location, never coordinate
 test("ask panel works for help without a location", async ({ page }) => {
   await mockAppApis(page);
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "ask" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ask a question" })).toBeVisible();
   await expect(
-    page.getByText("Help questions work now. Use Nearby or pick a city to ask about meetings."),
+    page.getByText("You can ask how meetings work now. Pick a city to ask about listings near you."),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "what should I expect" })).toBeVisible();
   await expect(page.getByRole("button", { name: "beginners tonight" })).toHaveCount(0);
   await page.getByLabel("Question").fill("what should I expect");
-  await page.getByRole("button", { name: "ask", exact: true }).click();
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.getByText("Ask is unavailable right now.")).toBeVisible();
 });
 

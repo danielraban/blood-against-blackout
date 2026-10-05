@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { ComicStrip } from "@/components/comic-strip";
 import { READING_FELLOWSHIPS, READING_HEADING, READINGS } from "@/lib/readings";
 
 export default function ResourcesPage() {
   const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
   return (
     <article className="space-y-6">
-      <h1 className="comic-wordmark font-display text-4xl lowercase tracking-tight sm:text-5xl">resources</h1>
-      <ComicStrip compact />
+      <h1 className="font-display text-4xl lowercase tracking-wide sm:text-5xl">resources</h1>
       <p className="text-muted">
         Original guidance for finding a meeting. We do not republish
         conference-approved readings; they open on the fellowships&apos; sites.
       </p>
-      <section className="space-y-2 border-4 border-black bg-warn p-4 text-black">
+      <section className="space-y-2 border-4 border-black bg-hot p-4 text-accent-fg">
         <h2 className="font-display text-xl lowercase">if this is an emergency</h2>
         <p>
           This meeting finder is not an emergency or medical service. If you or
@@ -138,7 +136,7 @@ export default function ResourcesPage() {
           <p>
             For privacy questions, artwork rights, corrections, or takedown
             requests, email{" "}
-            <a className="text-cool underline" href={`mailto:${supportEmail}`}>
+            <a className="underline" href={`mailto:${supportEmail}`}>
               {supportEmail}
             </a>
             .

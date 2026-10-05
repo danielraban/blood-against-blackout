@@ -15,16 +15,16 @@ export default function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 64,
-          color: "#fff6d8",
+          color: "#f7efe6",
           background:
-            "radial-gradient(circle at 85% 15%, #3d8bff 0, transparent 30%), radial-gradient(circle at 15% 85%, #ff2ad4 0, transparent 35%), #140018",
+            "radial-gradient(circle at 85% 15%, #24102c 0, transparent 30%), radial-gradient(circle at 15% 85%, #e11d2e 0, transparent 35%), #0b0610",
           border: "18px solid #000",
         }}
       >
         <div
           style={{
             display: "flex",
-            color: "#ffe600",
+            color: "#e11d2e",
             fontSize: 78,
             fontWeight: 900,
             letterSpacing: -4,
@@ -38,7 +38,7 @@ export default function OpenGraphImage() {
           <div style={{ display: "flex", fontSize: 46, fontWeight: 800 }}>
             darkness dies at the door
           </div>
-          <div style={{ display: "flex", color: "#00ffe0", fontSize: 28 }}>
+          <div style={{ display: "flex", color: "#c4adc8", fontSize: 28 }}>
             find aa, na, and ca meetings
           </div>
         </div>

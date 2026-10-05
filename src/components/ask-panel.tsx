@@ -83,11 +83,11 @@ export function AskPanel({
   return (
     <section className="space-y-3 border-4 border-black bg-card p-4">
       <div>
-        <h2 className="font-display text-2xl lowercase tracking-tight">ask</h2>
+        <h2 className="font-display text-2xl lowercase tracking-wide">ask a question</h2>
         <p className="text-sm text-muted">
           {hasArea
             ? "Ask about listings in this area, or how meetings work."
-            : "Help questions work now. Use Nearby or pick a city to ask about meetings."}
+            : "You can ask how meetings work now. Pick a city to ask about listings near you."}
         </p>
       </div>
       <div className="space-y-3" aria-live="polite">
@@ -106,8 +106,8 @@ export function AskPanel({
           if (!text && cards.length === 0) return null;
           return (
             <div key={message.id} className="space-y-2">
-              <p className="text-sm font-semibold lowercase">
-                {message.role === "user" ? "you" : "ask"}
+              <p className="text-sm font-semibold">
+                {message.role === "user" ? "You" : "Ask"}
               </p>
               {text ? <p className="whitespace-pre-wrap text-sm">{text}</p> : null}
               {cards.length ? (
@@ -170,7 +170,7 @@ export function AskPanel({
           disabled={busy}
         />
         <Button type="submit" disabled={busy}>
-          ask
+          Ask
         </Button>
       </form>
     </section>

@@ -13,12 +13,12 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#140018",
-          color: "#ffe600",
+          background: "#0b0610",
+          color: "#e11d2e",
           fontSize: 58,
           fontWeight: 900,
           border: "8px solid #000",
-          boxShadow: "inset 0 0 0 7px #ff2ad4",
+          boxShadow: "inset 0 0 0 7px #24102c",
         }}
       >
         bab
